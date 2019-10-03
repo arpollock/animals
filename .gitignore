@@ -102,3 +102,6 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# data that is too big to push
+/data/turkey_vultures.csv
