@@ -26,10 +26,33 @@ def read_file(visible_only=False) -> pd.DataFrame:
     return usefulDf
 
 
+def read_analysis() -> pd.DataFrame:
+    """Read Seth and Zach's analysis spreadsheet in as a pandas dataframe.
+    This data can be used to filter the vulture data into more useful sections.
+    """
+
+    # Get current working directory
+    cd = os.getcwd()
+    # Read in the vulture data
+    df = pd.read_excel(cd+'/data/Animals.xlsx')
+
+    return df
+
+
+def get_west_names() -> pd.DataFrame:
+    """Gets the names of the birds from the west"""
+
+    df = read_analysis()
+
+    good_enough = df[df["West"] >= 0.2]
+
+    return list(good_enough["Name"])
+
+
 def get_names(dataframe) -> pd.DataFrame:
     """Get all bird names. Takes a data frame"""
 
-    return df["individual-local-identifier"].unique()
+    return dataframe["individual-local-identifier"].unique()
 
 
 def get_data_by_name(df, name) -> pd.DataFrame:
@@ -41,6 +64,7 @@ def get_data_by_name(df, name) -> pd.DataFrame:
 if __name__ == "__main__":
     df = read_file()
     print(get_names(df))
+    print(get_west_names())
 
     name = None
     while name != "exit":
@@ -50,5 +74,6 @@ if __name__ == "__main__":
             quit()
 
         print(get_data_by_name(df, name))
+
 
     print("Thanks for playing!")
