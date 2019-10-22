@@ -56,15 +56,21 @@ def get_names(dataframe) -> pd.DataFrame:
 
 
 def get_data_by_name(df, name) -> pd.DataFrame:
-    """Filter df to only location entries for the bird named by name"""
+    """Filter df to only location entries for the bird named by name.
+    Returns a df if a string name is passed, or a list of df if a list
+    of names is passed. Is recursive in the list case"""
 
-    return df[df["individual-local-identifier"] == name]
+    if isinstance(name, str):
+        return df[df["individual-local-identifier"] == name]
+    elif isinstance(name, list):
+        return [get_data_by_name(df, n) for n in name]
 
 
 if __name__ == "__main__":
     df = read_file()
     print(get_names(df))
     print(get_west_names())
+    print(get_data_by_name(df, get_west_names()))
 
     name = None
     while name != "exit":
