@@ -6,6 +6,7 @@
 import cv2
 import imutils
 import os
+import numpy as np
 
 top_image = None
 color_elv_image = None
@@ -21,6 +22,7 @@ UPPER_LEFT_LAT = 55.61 # latitude of upper left corner of topo image
 UPPER_LEFT_LONG = -136.18 # longitude of upper left corner of topo image
 LOWER_RIGHT_LAT = 6.72 # latitude of lower right corner of topo image
 LOWER_RIGHT_LONG = -51.55 # longitude of lower right corner of topo image
+CORR_MATRIX = None
 
 def read_image():
     """Uses OpenCV to read the various images and get the needed constants for lat/long to px conversions."""
@@ -37,10 +39,12 @@ def read_image():
     global scale_thousand_km
     global color_elv_image
     global color_scale_height
+    global CORR_MATRIX
 
     top_image = cv2.imread( cd + '/data/top_map.png' )
     (h, w, d) = top_image.shape
     print("width={}, height={}, depth={}".format(w, h, d))
+    CORR_MATRIX = np.matrix([[0, 0, UPPER_LEFT_LAT, UPPER_LEFT_LONG], [0, h, UPPER_LEFT_LAT, LOWER_RIGHT_LONG], [w, h, LOWER_RIGHT_LAT, LOWER_RIGHT_LONG], [w, 0, LOWER_RIGHT_LAT, UPPER_LEFT_LONG]])
     
     # display the image to our screen -- we will need to click the window
     # open by OpenCV and press a key on our keyboard to continue execution
