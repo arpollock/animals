@@ -24,6 +24,8 @@ LOWER_RIGHT_LAT = 6.72 # latitude of lower right corner of topo image
 LOWER_RIGHT_LONG = -51.55 # longitude of lower right corner of topo image
 CORR_MATRIX = None
 
+# https://databasin.org/maps/new#datasets=588bcc4e1f2646e589e0fc9593498e3d
+
 def read_image():
     """Uses OpenCV to read the various images and get the needed constants for lat/long to px conversions."""
 
