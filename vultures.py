@@ -81,5 +81,4 @@ if __name__ == "__main__":
 
         print(get_data_by_name(df, name))
 
-
     print("Thanks for playing!")
