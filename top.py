@@ -7,6 +7,7 @@ import cv2
 import imutils
 import os
 import numpy as np
+import math
 
 top_image = None
 color_elv_image = None
@@ -22,7 +23,9 @@ UPPER_LEFT_LAT = 55.61  # latitude of upper left corner of topo image
 UPPER_LEFT_LONG = -136.18  # longitude of upper left corner of topo image
 LOWER_RIGHT_LAT = 6.72  # latitude of lower right corner of topo image
 LOWER_RIGHT_LONG = -51.55  # longitude of lower right corner of topo image
-CORR_MATRIX = None
+
+MAP_LON_DELTA = LOWER_RIGHT_LONG - UPPER_LEFT_LONG
+MAP_LAT_BOTTOM_DEGREE = LOWER_RIGHT_LAT * math.pi / 180
 
 # https://databasin.org/maps/new#datasets=588bcc4e1f2646e589e0fc9593498e3d
 
@@ -43,15 +46,10 @@ def read_image():
     global scale_thousand_km
     global color_elv_image
     global color_scale_height
-    global CORR_MATRIX
 
     top_image = cv2.imread(cd + '/data/top_map.png')
     (h, w, d) = top_image.shape
     print("width={}, height={}, depth={}".format(w, h, d))
-    CORR_MATRIX = np.matrix([[0, 0, UPPER_LEFT_LAT, UPPER_LEFT_LONG],
-                             [0, h, UPPER_LEFT_LAT, LOWER_RIGHT_LONG],
-                             [w, h, LOWER_RIGHT_LAT, LOWER_RIGHT_LONG],
-                             [w, 0, LOWER_RIGHT_LAT, UPPER_LEFT_LONG]])
 
     # display the image to our screen -- we will need to click the window
     # open by OpenCV and press a key on our keyboard to continue execution
@@ -69,35 +67,35 @@ def read_image():
     # for i in range(0, color_scale_height): # print debug make sure works
     #     print(f'{i}: {color_elv_image[i, 0]}')
 
-# TODO: make so is actually accurate
+def return_pixel(lat, lon):
+    """Takes in a latitude and longitude coord and returns a pixel location"""
 
+    x = (lon - UPPER_LEFT_LONG) * (w / MAP_LON_DELTA)
 
-"""https://www.accuware.com/support/convert-coordinates-latitude-and-longitude-into-pixels-xy-of-a-floor-plan-image/"""
+    lat = lat * math.pi / 180
+    
+    world_map_width = ((w / MAP_LON_DELTA) * 360) / (2 * math.pi)
 
+    map_offset_y = (world_map_width / 2 * math.log(
+        (1 + math.sin(MAP_LAT_BOTTOM_DEGREE))
+        / (1 - math.sin(MAP_LAT_BOTTOM_DEGREE))))
 
-def convert_lat_to_px(latitude=0) -> int:
-    if latitude <= UPPER_LEFT_LAT and latitude >= LOWER_RIGHT_LAT:
-        percent = (UPPER_LEFT_LAT - latitude) / \
-            (UPPER_LEFT_LAT - LOWER_RIGHT_LAT)
-        return round(percent * h)
-    else:
-        print(f'ERROR: invalid latitude value for current area.')
-        exit()
+    y = h - ((world_map_width / 2 * math.log(
+        (1 + math.sin(lat))
+        / (1 - math.sin(lat)))) - map_offset_y)
 
-
-def convert_long_to_px(longitude=0) -> int:
-    if longitude >= UPPER_LEFT_LONG and longitude <= LOWER_RIGHT_LONG:
-        percent = abs((UPPER_LEFT_LONG - longitude)
-                      / (UPPER_LEFT_LONG - LOWER_RIGHT_LONG))
-        return round(percent * w)
-    else:
-        print(f'ERROR: invalid longitude value for current area.')
-        exit()
+    return (round(x), round(y))
 
 
 def get_elevation(latitude=0, longitude=0) -> float:
-    y = convert_lat_to_px(latitude)
-    x = convert_long_to_px(longitude)
+    if latitude > UPPER_LEFT_LAT or latitude < LOWER_RIGHT_LAT:
+        print(f'ERROR: invalid latitude value for current area.')
+        exit()
+    if longitude < UPPER_LEFT_LONG and longitude > LOWER_RIGHT_LONG:
+        print(f'ERROR: invalid longitude value for current area.')
+        exit()
+    x, y = return_pixel(latitude, longitude)
+    print(f'px: ({x}, {y})')
     # note on accessing individual pixels
     # OpenCV color images in the RGB (Red, Green, Blue) color space
     # have a 3-tuple associated with each pixel: (B, G, R) not RGB!!
