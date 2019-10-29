@@ -49,8 +49,8 @@ def return_lat_lon(x, y):
         (1 + math.sin(map_lat_bottom_degree))
         / (1 - math.sin(map_lat_bottom_degree))))
 
-    lat = math.asin(-2 / (math.exp(2 * (map_height - y + map_offset_y) /
-                                   world_map_width) + 1) + 1)
+    lat = math.asin(-2 / (math.exp(2 * (map_height - y + map_offset_y)
+                                   / world_map_width) + 1) + 1)
 
     # Convert back to degreees
     lat = lat * 180 / math.pi
