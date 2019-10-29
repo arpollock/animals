@@ -4,10 +4,11 @@
 
 # import pandas as pd
 import cv2
-import imutils
+# import imutils
 import os
 import numpy as np
 import math
+import return_pixel as helpers
 
 top_image = None
 ocean_image = None
@@ -29,6 +30,11 @@ MAP_LON_DELTA = LOWER_RIGHT_LONG - UPPER_LEFT_LONG
 MAP_LAT_BOTTOM_DEGREE = LOWER_RIGHT_LAT * math.pi / 180
 
 # https://databasin.org/maps/new#datasets=588bcc4e1f2646e589e0fc9593498e3d
+
+
+def distance(points_1, points_2):
+    return math.sqrt(((points_1[0] - points_2[0])) ** 2
+                     + ((points_1[1] - points_2[1]) ** 2))
 
 
 def read_image():
@@ -76,7 +82,7 @@ def return_pixel(lat, lon):
     x = (lon - UPPER_LEFT_LONG) * (w / MAP_LON_DELTA)
 
     lat = lat * math.pi / 180
-    
+
     world_map_width = ((w / MAP_LON_DELTA) * 360) / (2 * math.pi)
 
     map_offset_y = (world_map_width / 2 * math.log(
@@ -105,10 +111,10 @@ def check_long(longitude=0) -> bool:
 
 
 def get_elevation(latitude=0, longitude=0) -> float:
-    
+
     if((not check_lat(latitude)) or (not check_long(longitude)) ):
         exit()
-    
+
     x, y = return_pixel(latitude, longitude)
     print(f'px: ({x}, {y})')
     # note on accessing individual pixels
@@ -167,5 +173,6 @@ if __name__ == "__main__":
 
         print(f'elevation: {get_elevation(float(latitude), float(longitude))}')
         print(f'ocean (0) or land (1): { get_ocean_or_land( float(latitude), float(longitude) )}')
+        print(f'alex pixel is {return_pixel(float(latitude), float(longitude))} and seth pixel is {helpers.return_pixel(float(latitude), float(longitude))}')
 
     print("Thanks for playing!")
