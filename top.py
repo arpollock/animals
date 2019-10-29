@@ -8,6 +8,7 @@ import imutils
 import os
 import numpy as np
 import math
+import queue
 
 top_image = None
 ocean_image = None
@@ -148,6 +149,48 @@ def closet_color_elv(b=0, g=0, r=0) -> float:
     return (MAX_ELEVATION
             - ((closest_color / color_scale_height) * MAX_ELEVATION))
 
+def image_bfs(y, x): 
+    visited_map = [[0 for y in range(h)] for x in range(w)] # 0 means not visited
+    to_visit = queue.Queue(w*h)
+    to_visit.put([y, x])
+
+    while(not to_visit.empty()):
+        curr = to_visit.get()
+        visited_map[curr[0]][curr[1]] = 1
+        (b, g, r) = ocean_image[curr[0], curr[1]]
+        if b < 5 and g < 5 and r < 5:
+            return [curr[0], curr[1]]
+        if in_bounds(curr[0]-1, curr[1]) and visited_map[curr[0]-1][curr[1]] == 0:
+            to_visit.put([curr[0]-1, curr[1]])
+        if in_bounds(curr[0]+1, curr[1]) and visited_map[curr[0]+1][curr[1]] == 0:
+            to_visit.put([curr[0]+1, curr[1]])
+        if in_bounds(curr[0], curr[1]-1) and visited_map[curr[0]][curr[1]-1] == 0:
+            to_visit.put([curr[0], curr[1]-1])
+        if in_bounds(curr[0], curr[1]+1) and visited_map[curr[0]][curr[1]+1] == 0:
+            to_visit.put([curr[0], curr[1]+1])
+    return None # no coast in image??
+
+def dist_from_coast(latitude=0, longitude=0):
+    if((not check_lat(latitude)) or (not check_long(longitude)) ):
+        exit()
+    x, y = return_pixel(latitude, longitude)
+    closest = image_bfs(y, x)
+    if closest is None:
+        print('NO COAST IN IMAGE.')
+        exit()
+    y_o = closest[0]
+    x_o = closest[1]
+    return distance(x, y, x_o, y_o)
+
+def distance(x1, y1, x2, y2):
+    return 12
+
+def in_bounds(y, x):
+    if x >= 0 and y >=0 and x < w and y < h:
+        return True
+    else:
+        return False
+
 
 if __name__ == "__main__":
 
@@ -165,7 +208,9 @@ if __name__ == "__main__":
         if longitude == "exit":
             quit()
 
-        print(f'elevation: {get_elevation(float(latitude), float(longitude))}')
+        print(f'elevation: {dist_from_coast(float(latitude), float(longitude))}')
         print(f'ocean (0) or land (1): { get_ocean_or_land( float(latitude), float(longitude) )}')
+        print(f'distance from coast (in px): { get_ocean_or_land( float(latitude), float(longitude) )}')
+
 
     print("Thanks for playing!")
