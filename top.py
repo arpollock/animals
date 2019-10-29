@@ -10,6 +10,7 @@ import numpy as np
 import math
 
 top_image = None
+ocean_image = None
 color_elv_image = None
 h = 0
 w = 0
@@ -41,13 +42,15 @@ def read_image():
     # images are represented as a multi-dimensional NumPy array with
     # shape no. rows (height) x no. columns (width) x no. channels (depth)
     global top_image
+    global ocean_image
     global h
     global w
     global scale_thousand_km
     global color_elv_image
     global color_scale_height
 
-    top_image = cv2.imread(cd + '/data/top_map.png')
+    top_image = cv2.imread(cd + '/data/top_map_black_ocean.png')
+    ocean_image = cv2.imread(cd + '/data/land_water.png')
     (h, w, d) = top_image.shape
     print("width={}, height={}, depth={}".format(w, h, d))
 
@@ -86,14 +89,26 @@ def return_pixel(lat, lon):
 
     return (round(x), round(y))
 
-
-def get_elevation(latitude=0, longitude=0) -> float:
+def check_lat(latitude=0) -> bool:
     if latitude > UPPER_LEFT_LAT or latitude < LOWER_RIGHT_LAT:
         print(f'ERROR: invalid latitude value for current area.')
-        exit()
+        return False
+    else:
+        return True
+
+def check_long(longitude=0) -> bool:
     if longitude < UPPER_LEFT_LONG and longitude > LOWER_RIGHT_LONG:
         print(f'ERROR: invalid longitude value for current area.')
+        return False
+    else:
+        return True
+
+
+def get_elevation(latitude=0, longitude=0) -> float:
+    
+    if((not check_lat(latitude)) or (not check_long(longitude)) ):
         exit()
+    
     x, y = return_pixel(latitude, longitude)
     print(f'px: ({x}, {y})')
     # note on accessing individual pixels
@@ -103,10 +118,25 @@ def get_elevation(latitude=0, longitude=0) -> float:
     # print(f'({top_b}, {top_g}, {top_r})')
     return closet_color_elv(top_b, top_g, top_r)
 
+def get_ocean_or_land(latitude=0, longitude=0):
+    ''' returns 0 for ocean (black pixel) or 1 for land (white), returns -1 if unknown'''
+    if((not check_lat(latitude)) or (not check_long(longitude)) ):
+        exit()
+    x, y = return_pixel(latitude, longitude)
+    (b, g, r) = ocean_image[y, x]
+    if b > 250 and g > 250 and r > 250: # assume white -> land
+        return 1
+    if b < 5 and g < 5 and r < 5: # assume black -> ocean
+        return 0
+    print(f'Could not determine land or water with RGB: ({r},{g},{b})')
+    return -1
+
 
 def closet_color_elv(b=0, g=0, r=0) -> float:
     closest_color = -1
     closest_color_dif = 300  # bigger than 0-255 range so will get replaced
+    if b < 5 and g < 5 and r < 5: # black -> ocean
+        return 0
     for i in range(0, color_scale_height):  # print debug make sure works
         (b_c, g_c, r_c) = color_elv_image[i, 0]
         color_diff = (abs(r - r_c)**2 + abs(g - g_c)
@@ -135,6 +165,7 @@ if __name__ == "__main__":
         if longitude == "exit":
             quit()
 
-        print(get_elevation(float(latitude), float(longitude)))
+        print(f'elevation: {get_elevation(float(latitude), float(longitude))}')
+        print(f'ocean (0) or land (1): { get_ocean_or_land( float(latitude), float(longitude) )}')
 
     print("Thanks for playing!")
