@@ -8,6 +8,7 @@ import cv2
 import os
 import numpy as np
 import math
+import queue
 import return_pixel as helpers
 
 top_image = None
@@ -76,6 +77,7 @@ def read_image():
     # for i in range(0, color_scale_height): # print debug make sure works
     #     print(f'{i}: {color_elv_image[i, 0]}')
 
+
 def return_pixel(lat, lon):
     """Takes in a latitude and longitude coord and returns a pixel location"""
 
@@ -95,12 +97,14 @@ def return_pixel(lat, lon):
 
     return (round(x), round(y))
 
+
 def check_lat(latitude=0) -> bool:
     if latitude > UPPER_LEFT_LAT or latitude < LOWER_RIGHT_LAT:
         print(f'ERROR: invalid latitude value for current area.')
         return False
     else:
         return True
+
 
 def check_long(longitude=0) -> bool:
     if longitude < UPPER_LEFT_LONG and longitude > LOWER_RIGHT_LONG:
@@ -112,7 +116,7 @@ def check_long(longitude=0) -> bool:
 
 def get_elevation(latitude=0, longitude=0) -> float:
 
-    if((not check_lat(latitude)) or (not check_long(longitude)) ):
+    if((not check_lat(latitude)) or (not check_long(longitude))):
         exit()
 
     x, y = return_pixel(latitude, longitude)
@@ -124,15 +128,18 @@ def get_elevation(latitude=0, longitude=0) -> float:
     # print(f'({top_b}, {top_g}, {top_r})')
     return closet_color_elv(top_b, top_g, top_r)
 
+
 def get_ocean_or_land(latitude=0, longitude=0):
-    ''' returns 0 for ocean (black pixel) or 1 for land (white), returns -1 if unknown'''
-    if((not check_lat(latitude)) or (not check_long(longitude)) ):
+    ''' returns 0 for ocean (black pixel) or 1 for land (white),
+    returns -1 if unknown'''
+
+    if((not check_lat(latitude)) or (not check_long(longitude))):
         exit()
     x, y = return_pixel(latitude, longitude)
     (b, g, r) = ocean_image[y, x]
-    if b > 250 and g > 250 and r > 250: # assume white -> land
+    if b > 250 and g > 250 and r > 250:  # assume white -> land
         return 1
-    if b < 5 and g < 5 and r < 5: # assume black -> ocean
+    if b < 5 and g < 5 and r < 5:  # assume black -> ocean
         return 0
     print(f'Could not determine land or water with RGB: ({r},{g},{b})')
     return -1
@@ -141,7 +148,7 @@ def get_ocean_or_land(latitude=0, longitude=0):
 def closet_color_elv(b=0, g=0, r=0) -> float:
     closest_color = -1
     closest_color_dif = 300  # bigger than 0-255 range so will get replaced
-    if b < 5 and g < 5 and r < 5: # black -> ocean
+    if b < 5 and g < 5 and r < 5:  # black -> ocean
         return 0
     for i in range(0, color_scale_height):  # print debug make sure works
         (b_c, g_c, r_c) = color_elv_image[i, 0]
@@ -153,6 +160,48 @@ def closet_color_elv(b=0, g=0, r=0) -> float:
     # print(f'closest color row: {closest_color}')
     return (MAX_ELEVATION
             - ((closest_color / color_scale_height) * MAX_ELEVATION))
+
+
+def image_bfs(y, x):
+    visited_map = [[0 for y in range(h)] for x in range(w)]  # 0 means not visited
+    to_visit = queue.Queue(w*h)
+    to_visit.put([y, x])
+
+    while(not to_visit.empty()):
+        curr = to_visit.get()
+        visited_map[curr[0]][curr[1]] = 1
+        (b, g, r) = ocean_image[curr[0], curr[1]]
+        if b < 5 and g < 5 and r < 5:
+            return [curr[0], curr[1]]
+        if in_bounds(curr[0]-1, curr[1]) and visited_map[curr[0]-1][curr[1]] == 0:
+            to_visit.put([curr[0]-1, curr[1]])
+        if in_bounds(curr[0]+1, curr[1]) and visited_map[curr[0]+1][curr[1]] == 0:
+            to_visit.put([curr[0]+1, curr[1]])
+        if in_bounds(curr[0], curr[1]-1) and visited_map[curr[0]][curr[1]-1] == 0:
+            to_visit.put([curr[0], curr[1]-1])
+        if in_bounds(curr[0], curr[1]+1) and visited_map[curr[0]][curr[1]+1] == 0:
+            to_visit.put([curr[0], curr[1]+1])
+    return None  # no coast in image??
+
+
+def dist_from_coast(latitude=0, longitude=0):
+    if((not check_lat(latitude)) or (not check_long(longitude)) ):
+        exit()
+    x, y = return_pixel(latitude, longitude)
+    closest = image_bfs(y, x)
+    if closest is None:
+        print('NO COAST IN IMAGE.')
+        exit()
+    y_o = closest[0]
+    x_o = closest[1]
+    return distance((x, y), (x_o, y_o))
+
+
+def in_bounds(y, x):
+    if x >= 0 and y >= 0 and x < w and y < h:
+        return True
+    else:
+        return False
 
 
 if __name__ == "__main__":
@@ -173,6 +222,6 @@ if __name__ == "__main__":
 
         print(f'elevation: {get_elevation(float(latitude), float(longitude))}')
         print(f'ocean (0) or land (1): { get_ocean_or_land( float(latitude), float(longitude) )}')
-        print(f'alex pixel is {return_pixel(float(latitude), float(longitude))} and seth pixel is {helpers.return_pixel(float(latitude), float(longitude))}')
+        print(f'distance from coast (in px): { dist_from_coast( float(latitude), float(longitude) )}')
 
     print("Thanks for playing!")
