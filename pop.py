@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-# Python file for reading and interacting with the topographic data
+# Python file for reading and interacting with the population/ city data
 
 import pandas as pd
 import numpy as np
