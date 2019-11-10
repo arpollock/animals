@@ -5,6 +5,7 @@
 import pandas as pd
 import os
 from return_pixel import return_pixel
+from features import get_action
 
 
 def read_file(visible_only=False) -> pd.DataFrame:
@@ -71,12 +72,53 @@ def add_pixels(df) -> pd.DataFrame:
     """Uses the return_pixel function to add x and y pixel locations
     to the data frame"""
 
+    if df["x"] is not None and df["y"] is not None:
+        return
+
     df["x"] = df.apply(lambda row: return_pixel(row["location-lat"],
                                                 row["location-long"])[0],
                        axis=1)
     df["y"] = df.apply(lambda row: return_pixel(row["location-lat"],
                                                 row["location-long"])[1],
                        axis=1)
+
+
+def interpolate(last_x, last_y, dest_x, dest_y) -> list:
+    """Provides a list of x,y pairs in tuple form that bridge from last_x,
+    lasy_y and include dest_x, dest_y. The path will move one step at a
+    time in the dimension that changes the most, to guarantee continuity
+    """
+
+    dy = dest_y - last_y
+    dx = dest_x - last_x
+    m = float(dy) / float(dx)
+
+    y_step = int(dy / abs(dy))
+    x_step = int(dx / abs(dx))
+
+    if last_x < dest_x:
+        b = last_y
+    else:
+        b = dest_y
+
+    print(f"x_step is {x_step}")
+    print(f"y_step is {y_step}")
+
+    def line_x(x, m, b):
+        return round(m*x + b)
+
+    def line_y(y, m, b):
+        return round((y - b) / m)
+
+    if abs(dy) > abs(dx):
+        return list([(line_y(y, m, b), y) for y in range(
+            last_y + y_step, dest_y + y_step, y_step)])
+    elif abs(dx) > abs(dy):
+        return list([(x, line_x(x, m, b)) for x in range(
+            last_x + x_step, dest_x + x_step, x_step)])
+    elif abs(dx) == abs(dy):
+        return list(zip(range(last_x + x_step, dest_x + x_step, x_step),
+                        range(last_y + y_step, dest_y + y_step, y_step)))
 
 
 if __name__ == "__main__":
