@@ -4,6 +4,7 @@
 
 import pandas as pd
 import os
+from return_pixel import return_pixel
 
 
 def read_file(visible_only=False) -> pd.DataFrame:
@@ -66,11 +67,26 @@ def get_data_by_name(df, name) -> pd.DataFrame:
         return [get_data_by_name(df, n) for n in name]
 
 
+def add_pixels(df) -> pd.DataFrame:
+    """Uses the return_pixel function to add x and y pixel locations
+    to the data frame"""
+
+    df["x"] = df.apply(lambda row: return_pixel(row["location-lat"],
+                                                row["location-long"])[0],
+                       axis=1)
+    df["y"] = df.apply(lambda row: return_pixel(row["location-lat"],
+                                                row["location-long"])[1],
+                       axis=1)
+
+
 if __name__ == "__main__":
     df = read_file()
     print(get_names(df))
     print(get_west_names())
     print(get_data_by_name(df, get_west_names()))
+    my_df = get_data_by_name(df, get_west_names())[0]
+    add_pixels(my_df)
+    print(my_df)
 
     name = None
     while name != "exit":
