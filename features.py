@@ -82,6 +82,22 @@ class feature_hub:
             print("One of the features provided was unknown")
 
 
+def get_action(dx, dy):
+    """Returns the number of the action taken given change in x and
+    change in y"""
+
+    dx = dx / abs(dx)
+    dy = dy / abs(dy)
+
+    action_dict = {
+        -1: {-1: 0, 0: 1, 1: 2},
+        0: {-1: 3, 0: 4, 1: 5},
+        1: {-1: 6, 0: 7, 1: 8}
+    }
+
+    return action_dict[dy][dx]
+
+
 if __name__ == "__main__":
     test_hub = feature_hub()
     print("***Features***")
