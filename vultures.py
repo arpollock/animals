@@ -6,6 +6,7 @@ import pandas as pd
 import os
 from return_pixel import return_pixel
 from features import get_action
+import numpy as np
 
 
 def read_file(visible_only=False) -> pd.DataFrame:
@@ -72,7 +73,7 @@ def add_pixels(df) -> pd.DataFrame:
     """Uses the return_pixel function to add x and y pixel locations
     to the data frame"""
 
-    if df["x"] is not None and df["y"] is not None:
+    if "x" in df and "y" in df:
         return
 
     df["x"] = df.apply(lambda row: return_pixel(row["location-lat"],
@@ -91,6 +92,20 @@ def interpolate(last_x, last_y, dest_x, dest_y) -> list:
 
     dy = dest_y - last_y
     dx = dest_x - last_x
+
+    if dx == 0 and dy != 0:
+        y_step = int(dy / abs(dy))
+        return list([(last_x, y) for y in range(
+            last_y + y_step, dest_y + y_step, y_step
+        )])
+    elif dx != 0 and dy == 0:
+        x_step = int(dx / abs(dx))
+        return list([(x, last_y) for x in range(
+            last_x + x_step, dest_x + x_step, x_step
+        )])
+    elif dx == 0 and dy == 0:
+        return [(last_x, last_y)]
+
     m = float(dy) / float(dx)
 
     y_step = int(dy / abs(dy))
@@ -100,9 +115,6 @@ def interpolate(last_x, last_y, dest_x, dest_y) -> list:
         b = last_y
     else:
         b = dest_y
-
-    print(f"x_step is {x_step}")
-    print(f"y_step is {y_step}")
 
     def line_x(x, m, b):
         return round(m*x + b)
@@ -121,6 +133,29 @@ def interpolate(last_x, last_y, dest_x, dest_y) -> list:
                         range(last_y + y_step, dest_y + y_step, y_step)))
 
 
+def get_coords(df) -> list:
+    """Takes a data frame representing the path of a single bird, and
+    constructs a list of (x, y) coords that represent this bird's path.
+    Makes use of the interpolate function to fill in gaps"""
+
+    add_pixels(df)
+    last_x = None
+    last_y = None
+
+    for row in df.itertuples(index=False):
+        x = getattr(row, "x")
+        y = getattr(row, "y")
+        if last_x is None or last_y is None:
+            last_x = x
+            last_y = y
+            yield (last_x, last_y)
+            continue
+        for coord in interpolate(last_x, last_y, x, y):
+            yield coord
+        last_x = x
+        last_y = y
+
+
 if __name__ == "__main__":
     df = read_file()
     print(get_names(df))
@@ -129,6 +164,7 @@ if __name__ == "__main__":
     my_df = get_data_by_name(df, get_west_names())[0]
     add_pixels(my_df)
     print(my_df)
+    print(list(get_coords(my_df)))
 
     name = None
     while name != "exit":
