@@ -17,10 +17,13 @@ Place Turkey Vulture data in the *data* directory, with the filename `turkey_vul
 
 **TODO (as of 11/4):**
 - Define buckets for each feature
-    - Zach's notes: Why not define bucket count for each feature, which gives us d for free and is more flexible for future users?
+    - Zach's notes: Why not define bucket count for each feature, which gives us d for free and is more flexible for future users? This has been done but it is changeable
 - Create feature matrix (size n by d where n: # of states, d: dimensions of states)
+    - This has been done now
+- **NEW ITEM**: Find min and max values for every feature
 - Decide on ranges for hyper-parameters (discount, epochs, learning rate)
 - Linearly interpolate turkey data
+    - This should be doable in the process of creating trajectories
 - Iterate over each bird:
     - Iterate over each location:
         - Define state action pair (state i, action j)
@@ -33,4 +36,3 @@ Place Turkey Vulture data in the *data* directory, with the filename `turkey_vul
 - Land vs. Water (2 buckets)
 - Distance from Coast (10 buckets)
 - Elevation (10 buckets)
-
