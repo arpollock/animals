@@ -7,6 +7,7 @@ from functools import reduce
 import operator
 import itertools
 from water import get_if_water_xy
+import vultures
 
 
 class feature:
@@ -171,13 +172,43 @@ class model:
 
         return self.states[[f.get_bucket(f.function(x, y)) for f in features]]
 
+    def get_trajectory(self, points, features=[]):
+        """Returns an Ix2 matrix representing the trajectory of the given
+        series of points."""
+
+        if len(features) == 0:
+            features = self.feature_dict.keys()
+
+        pairs = []
+
+        last_x = None
+        last_y = None
+        for point in points:
+            x = point[0]
+            y = point[1]
+            if last_x is None and last_y is None:
+                last_x = x
+                last_y = y
+
+            state = self.get_state(x, y, features)
+            action = get_action(x - last_x, y-last_y)
+            print(f"Point ({x}, {y}) -> State {state}, Action{action}")
+            pairs.append((state, action))
+
+            last_x = x
+            last_y = y
+
+        return np.array(pairs)
+
 
 def get_action(dx, dy):
     """Returns the number of the action taken given change in x and
     change in y"""
 
-    dx = dx / abs(dx)
-    dy = dy / abs(dy)
+    if dx != 0:
+        dx = dx / abs(dx)
+    if dy != 0:
+        dy = dy / abs(dy)
 
     action_dict = {
         -1: {-1: 0, 0: 1, 1: 2},
@@ -196,5 +227,11 @@ if __name__ == "__main__":
     print(test_hub.get_feature_matrix())
     print("***Feature Matrix with just water***")
     print(test_hub.get_feature_matrix(["water"]))
-
+    print("***State of 0, 0 using water feature***")
     print(test_hub.get_state(0, 0, ["water"]))
+    print("***Reading vulture data***")
+    df = vultures.read_file()
+    my_df = vultures.get_data_by_name(df, vultures.get_west_names())[0]
+    coords = vultures.get_coords(my_df)
+    print("***Trajectory for first vulture on west***")
+    print(test_hub.get_trajectory(coords, ["water"]))

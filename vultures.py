@@ -5,7 +5,6 @@
 import pandas as pd
 import os
 from return_pixel import return_pixel
-from features import get_action
 import numpy as np
 
 
