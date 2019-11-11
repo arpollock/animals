@@ -135,7 +135,7 @@ def interpolate(last_x, last_y, dest_x, dest_y) -> list:
 
 def get_coords(df) -> list:
     """Takes a data frame representing the path of a single bird, and
-    constructs a list of (x, y) coords that represent this bird's path.
+    generates (x, y) coords that represent this bird's path.
     Makes use of the interpolate function to fill in gaps"""
 
     add_pixels(df)
