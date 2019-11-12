@@ -30,6 +30,17 @@ Place Turkey Vulture data in the *data* directory, with the filename `turkey_vul
         - keep track of transitions: Every time bird went from state i to state
           k using action j (probability determined as number to state k with
           action j / total number that left i)
+          
+          
+**TODO (as of 11/11):**
+- Fix distance from coast (Seth)
+- Population density/city distance (Seth)
+- Have all features output results to npy file for pxs (Alex)
+- Fix linear interpolation (Zach + Leah)
+- Finish feature class (Zach)
+- Try bringing in IRL model to our work (Leah)
+     - Passing in our data to the guy's IRL library
+- Learn/Understand IRL model and bring questions/needed clarifications/etc (link above; All)
 
 ## Features
 
