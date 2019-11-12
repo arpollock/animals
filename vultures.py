@@ -122,10 +122,10 @@ def interpolate(last_x, last_y, dest_x, dest_y) -> list:
         return round((y - b) / m)
 
     if abs(dy) > abs(dx):
-        return list([(line_y(y, m, b), y) for y in range(
+        return list([(line_y(y, m, b) + last_y, y) for y in range(
             last_y + y_step, dest_y + y_step, y_step)])
     elif abs(dx) > abs(dy):
-        return list([(x, line_x(x, m, b)) for x in range(
+        return list([(x, line_x(x - last_x, m, b)) for x in range(
             last_x + x_step, dest_x + x_step, x_step)])
     elif abs(dx) == abs(dy):
         return list(zip(range(last_x + x_step, dest_x + x_step, x_step),
