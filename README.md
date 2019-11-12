@@ -30,6 +30,8 @@ Place Turkey Vulture data in the *data* directory, with the filename `turkey_vul
         - keep track of transitions: Every time bird went from state i to state
           k using action j (probability determined as number to state k with
           action j / total number that left i)
+          
+          
 **TODO (as of 11/11):**
 - Fix distance from coast (Seth)
 - Population density/city distance (Seth)
