@@ -87,13 +87,13 @@ class model:
             features = self.feature_dict.keys()
 
         self.states = np.zeros(tuple(
-            self.feature_dict[f].buckets for f in features))
+            self.feature_dict[f].buckets for f in features), dtype=np.int32)
 
         range_list = list(
             [range(0, self.feature_dict[f].buckets) for f in features])
         combinations = list(itertools.product(*range_list))
         for s, combo in enumerate(combinations):
-            self.states[combo] = s
+            self.states[combo] = int(s)
 
     def list_features(self):
         """Returns a list of feature strings"""
@@ -170,7 +170,8 @@ class model:
 
         features = list(map(lambda name: self.feature_dict[name], features))
 
-        return self.states[[f.get_bucket(f.function(x, y)) for f in features]]
+        return self.states[
+            [f.get_bucket(f.function(x, y)) for f in features]][0]
 
     def get_trajectory(self, points, features=[]):
         """Returns an Ix2 matrix representing the trajectory of the given
