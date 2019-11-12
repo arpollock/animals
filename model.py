@@ -193,7 +193,7 @@ class model:
 
             state = self.get_state(x, y, features)
             action = get_action(x - last_x, y-last_y)
-            print(f"Point ({x}, {y}) -> State {state}, Action{action}")
+            print(f"Point ({x}, {y}) -> State {state}, Action {action}")
             pairs.append((state, action))
 
             last_x = x
