@@ -89,47 +89,20 @@ def interpolate(last_x, last_y, dest_x, dest_y) -> list:
     time in the dimension that changes the most, to guarantee continuity
     """
 
-    dy = dest_y - last_y
     dx = dest_x - last_x
+    dy = dest_y - last_y
 
-    if dx == 0 and dy != 0:
-        y_step = int(dy / abs(dy))
-        return list([(last_x, y) for y in range(
-            last_y + y_step, dest_y + y_step, y_step
-        )])
-    elif dx != 0 and dy == 0:
-        x_step = int(dx / abs(dx))
-        return list([(x, last_y) for x in range(
-            last_x + x_step, dest_x + x_step, x_step
-        )])
-    elif dx == 0 and dy == 0:
-        return [(last_x, last_y)]
+    if (dy == 0 and dx == 0):
+        return []
 
-    m = float(dy) / float(dx)
+    max_val = max(abs(dx), abs(dy))
 
-    y_step = int(dy / abs(dy))
-    x_step = int(dx / abs(dx))
+    x_step = float(dx)/max_val
+    y_step = float(dy)/max_val
 
-    if last_x < dest_x:
-        b = last_y
-    else:
-        b = dest_y
-
-    def line_x(x, m, b):
-        return round(m*x + b)
-
-    def line_y(y, m, b):
-        return round((y - b) / m)
-
-    if abs(dy) > abs(dx):
-        return list([(line_y(y, m, b) + last_y, y) for y in range(
-            last_y + y_step, dest_y + y_step, y_step)])
-    elif abs(dx) > abs(dy):
-        return list([(x, line_x(x - last_x, m, b)) for x in range(
-            last_x + x_step, dest_x + x_step, x_step)])
-    elif abs(dx) == abs(dy):
-        return list(zip(range(last_x + x_step, dest_x + x_step, x_step),
-                        range(last_y + y_step, dest_y + y_step, y_step)))
+    return list(
+            [(round(last_x + x_step * (i + 1)),
+              round(last_y + y_step * (i + 1))) for i in range(max_val)])
 
 
 def get_coords(df) -> list:
@@ -149,8 +122,10 @@ def get_coords(df) -> list:
             last_y = y
             yield (last_x, last_y)
             continue
+        # print(f"Interpolating ({last_x}, {last_y})->({x}, {y})")
         for coord in interpolate(last_x, last_y, x, y):
             yield coord
+        # print("Finished interpolation")
         last_x = x
         last_y = y
 
@@ -163,7 +138,19 @@ if __name__ == "__main__":
     my_df = get_data_by_name(df, get_west_names())[0]
     add_pixels(my_df)
     print(my_df)
-    print(list(get_coords(my_df)))
+    last_x = None
+    last_y = None
+    for pair in list(get_coords(my_df)):
+        x = pair[0]
+        y = pair[1]
+        if last_x is None or last_y is None:
+            last_x = x
+            last_y = y
+            continue
+        print(f"({x}, {y}) from ({last_x}, {last_y})")
+        assert(abs(x - last_x) <= 1 and abs(y - last_y) <= 1)
+        last_x = x
+        last_y = y
 
     name = None
     while name != "exit":
