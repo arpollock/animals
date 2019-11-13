@@ -34,11 +34,16 @@ class feature:
         self.min = min
         if custom_func is None:
             self.function = self.get_value
+            try:
+                self.data = np.load(self.file)
+            except IOError:
+                print(f"There was a problem with the numpy file {self.file}")
+                exit(1)
         else:
             self.function = custom_func
 
         if file is None:
-            self.file = self.name
+            self.file = f"{self.name}.npy"
         else:
             self.file = file
 
@@ -55,14 +60,13 @@ class feature:
         normal = (value - self.min) / (self.max - self.min)
         return round(self.buckets * normal)
 
-    def get_value(self):
-        """Default data reading function. Should construct an array from
-        reading the contents of the file named at self.file, then access
+    def get_value(self, x, y):
+        """Default data reading function. Should access an array read from
+        the contents of the file named at self.file, then access
         this matrix at the given x, y, coordinate.
         """
 
-        # TODO: Actually read data and return a real value
-        pass
+        return self.data[x, y]
 
 
 class model:
@@ -72,9 +76,9 @@ class model:
         """Initialize class with features and dimensions"""
 
         self.feature_dict = {
-            "water": feature("water", 2, 1, 0, get_if_water_xy),
+            "water": feature("water", 2, 1, 0, file="ocean_or_land.npy"),
             "coast": feature("coast", 10, 5000, 0),
-            "elevation": feature("elevation", 10, 5000, 0)
+            "elevation": feature("elevation", 8, 31, 0)
         }
 
         self.set_states()
