@@ -38,7 +38,7 @@ class feature:
             self.function = custom_func
 
         if file is None:
-            self.file = f"{self.name}.txt"
+            self.file = self.name
         else:
             self.file = file
 
