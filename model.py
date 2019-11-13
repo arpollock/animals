@@ -14,7 +14,8 @@ class feature:
     """Class which represents a single feature of the data to be used
     for learning rewards"""
 
-    def __init__(self, name, buckets, max, min, custom_func=None, file=None):
+    def __init__(self, name, buckets,
+                 max=None, min=None, custom_func=None, file=None):
         """Initialize feature with name and number of buckets.
         If provided, custom_func sets the function to be called to
         aquire a value for this feature at a given x, y coord, to be
@@ -30,8 +31,6 @@ class feature:
 
         self.name = name
         self.buckets = buckets
-        self.max = max
-        self.min = min
         if custom_func is None:
             self.function = self.get_value
             try:
@@ -39,8 +38,16 @@ class feature:
             except IOError:
                 print(f"There was a problem with the numpy file {self.file}")
                 exit(1)
+            self.max = np.maximum(self.data)
+            self.min = np.minimum(self.data)
         else:
             self.function = custom_func
+            self.max = max
+            self.min = min
+
+            if self.max is None or self.min is None:
+                raise AttributeError(
+                    "Min and Max must be passed for custom  function")
 
         if file is None:
             self.file = f"{self.name}.npy"
@@ -76,9 +83,10 @@ class model:
         """Initialize class with features and dimensions"""
 
         self.feature_dict = {
-            "water": feature("water", 2, 1, 0, file="ocean_or_land.npy"),
-            "coast": feature("coast", 10, 5000, 0),
-            "elevation": feature("elevation", 8, 31, 0)
+            "water": feature("water", 2, file="ocean_or_land.npy"),
+            # "coast": feature("coast", 10, 5000, 0),
+            "elevation": feature("elevation", 8),
+            # "population": feature("population", 10)
         }
 
         self.set_states()
