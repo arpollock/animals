@@ -31,15 +31,21 @@ class feature:
 
         self.name = name
         self.buckets = buckets
+
+        if file is None:
+            self.file = f"{self.name}.npy"
+        else:
+            self.file = file
+
         if custom_func is None:
             self.function = self.get_value
             try:
-                self.data = np.load(self.file)
+                self.data = np.load(self.file, allow_pickle=True)
             except IOError:
                 print(f"There was a problem with the numpy file {self.file}")
                 exit(1)
-            self.max = np.maximum(self.data)
-            self.min = np.minimum(self.data)
+            self.max = self.data.max()
+            self.min = self.data.min()
         else:
             self.function = custom_func
             self.max = max
@@ -48,11 +54,6 @@ class feature:
             if self.max is None or self.min is None:
                 raise AttributeError(
                     "Min and Max must be passed for custom  function")
-
-        if file is None:
-            self.file = f"{self.name}.npy"
-        else:
-            self.file = file
 
     def __repr__(self):
         """How the feature should represent itself"""
@@ -65,7 +66,7 @@ class feature:
         values for this feature. Returns an int"""
 
         normal = (value - self.min) / (self.max - self.min)
-        return round(self.buckets * normal)
+        return round((self.buckets - 1) * normal)
 
     def get_value(self, x, y):
         """Default data reading function. Should access an array read from
@@ -182,8 +183,10 @@ class model:
 
         features = list(map(lambda name: self.feature_dict[name], features))
 
-        return self.states[
-            [f.get_bucket(f.function(x, y)) for f in features]][0]
+        indices = [f.get_bucket(f.function(x, y)) for f in features]
+        index_tuple = tuple(indices)
+
+        return self.states[index_tuple]
 
     def get_trajectory(self, points, features=[]):
         """Returns an Ix2 matrix representing the trajectory of the given
@@ -205,7 +208,7 @@ class model:
 
             state = self.get_state(x, y, features)
             action = get_action(x - last_x, y-last_y)
-            print(f"Point ({x}, {y}) -> State {state}, Action {action}")
+            # print(f"Point ({x}, {y}) -> State {state}, Action {action}")
             pairs.append((state, action))
 
             last_x = x
@@ -247,4 +250,4 @@ if __name__ == "__main__":
     my_df = vultures.get_data_by_name(df, vultures.get_west_names())[0]
     coords = vultures.get_coords(my_df)
     print("***Trajectory for first vulture on west***")
-    print(test_hub.get_trajectory(coords, ["water"]))
+    print(test_hub.get_trajectory(coords))
