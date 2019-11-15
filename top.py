@@ -11,9 +11,11 @@ import math
 import queue
 import return_pixel as helpers
 
+dist = 0
 top_image = None
 ocean_image = None
 color_elv_image = None
+coast_image = None
 h = 0
 w = 0
 scale_thousand_km = 0
@@ -55,6 +57,7 @@ def read_image():
     global scale_thousand_km
     global color_elv_image
     global color_scale_height
+    global coast_image
 
     top_image = cv2.imread(cd + '/data/top_map_black_ocean.png')
     ocean_image = cv2.imread(cd + '/data/land_water.png')
@@ -76,6 +79,25 @@ def read_image():
         color_scale_height))
     # for i in range(0, color_scale_height): # print debug make sure works
     #     print(f'{i}: {color_elv_image[i, 0]}')
+    coast_image = np.zeros((h, w), dtype=np.uint8)
+    for coast in get_coast_points():
+        coast_image[coast[1]][coast[0]] = 255
+
+
+def get_coast_points():
+    """Takes in a binary image and returns a list of (x, y) locations for the
+    coast"""
+    img = cv2.cvtColor(ocean_image, cv2.COLOR_BGR2GRAY)
+    _, img = cv2.threshold(img, 100, 1, cv2.THRESH_BINARY)
+    height, width = img.shape
+    coast_points = []
+    for x in range(width - 1):
+        for y in range(height - 1):
+            if x < width - 1 and img[y][x] + img[y][x+1] == 1:
+                coast_points.append((x + img[y][x+1], y))
+            if y < height - 1 and img[y][x] + img[y+1][x] == 1:
+                coast_points.append((x, y + img[y+1][x]))
+    return coast_points
 
 
 def return_pixel(lat, lon):
@@ -184,17 +206,27 @@ def image_bfs(y, x):
     return None  # no coast in image??
 
 
-def dist_from_coast(latitude=0, longitude=0):
-    if((not check_lat(latitude)) or (not check_long(longitude)) ):
-        exit()
-    x, y = return_pixel(latitude, longitude)
-    closest = image_bfs(y, x)
-    if closest is None:
-        print('NO COAST IN IMAGE.')
-        exit()
-    y_o = closest[0]
-    x_o = closest[1]
-    return distance((x, y), (x_o, y_o))
+def dist_from_coast(x, y, new):
+    global dist
+    if new:
+        dist = 0
+    else:
+        dist = max(dist - 2, 0)
+    while True:
+        dist += 1
+        x_steady = (x - dist, x + dist)
+        y_steady = (y - dist, y + dist)
+        for x_check in range(max(x - dist, 0), min(x + dist + 1, w)):
+            if y_steady[0] >= 0 and coast_image[y_steady[0]][x_check] > 0:
+                return distance((x, y), (x_check, y_steady[0]))
+            if y_steady[1] < h and coast_image[y_steady[1]][x_check] > 0:
+                return distance((x, y), (x_check, y_steady[1]))
+        for y_check in range(max(y - dist, 0), min(y + dist + 1, h)):
+            if x_steady[0] >= 0 and coast_image[y_check][x_steady[0]] > 0:
+                return distance((x, y), (x_steady[0], y_check))
+            if x_steady[1] < w and coast_image[y_check][x_steady[1]] > 0:
+                return distance((x, y), (x_steady[1], y_check))
+    return None
 
 
 def in_bounds(y, x):
@@ -205,8 +237,18 @@ def in_bounds(y, x):
 
 
 if __name__ == "__main__":
-
     read_image()
+    coast_heatmap = np.zeros((h, w), dtype=np.uint16)
+    for x in range(w):
+        print(x)
+        new = True
+        for y in range(h):
+            coast_heatmap[y][x] = dist_from_coast(x, y, new)
+            new = False
+    cv2.imshow('Distance From Coast Heatmap', np.divide(coast_heatmap, np.max(coast_heatmap) / 255).astype(np.uint8))
+    while cv2.waitKey(33) != 27:
+        pass
+    np.save("coast.npy", coast_heatmap)
     latitude = None
     longitude = None
     while latitude != "exit":
