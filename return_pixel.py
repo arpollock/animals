@@ -4,6 +4,9 @@ import math
 def return_pixel(lat, lon):
     """Takes in a latitude and longitude coord and returns a pixel location"""
 
+    assert(isinstance(lat, float))
+    assert(isinstance(lon, float))
+
     map_width = 1928
     map_height = 1378
 
@@ -25,7 +28,11 @@ def return_pixel(lat, lon):
         (1 + math.sin(lat))
         / (1 - math.sin(lat)))) - map_offset_y)
 
-    return round(x), round(y)
+    try:
+        return round(x), round(y)
+    except ValueError as v:
+        print(lat, lon, x, y)
+        raise v
 
 
 def return_lat_lon(x, y):

@@ -4,8 +4,8 @@
 
 import pandas as pd
 import os
-from return_pixel import return_pixel
 import numpy as np
+import model
 
 
 def read_file(visible_only=False) -> pd.DataFrame:
@@ -18,13 +18,15 @@ def read_file(visible_only=False) -> pd.DataFrame:
     # Read in the vulture data
     df = pd.read_csv(cd+'/data/turkey_vultures.csv', low_memory=False)
 
-    usefulDf = df[["event-id", "visible", "timestamp",
+    usefulDf = df[["visible",  # "timestamp,"
                    "location-long", "location-lat",
                    "individual-local-identifier"]].copy()
 
     if visible_only:
         return usefulDf[usefulDf["visible"] is True]
 
+    usefulDf = usefulDf.dropna(subset=["location-long",
+                                       "location-lat"], axis=0)
     return usefulDf
 
 
@@ -62,72 +64,13 @@ def get_data_by_name(df, name) -> pd.DataFrame:
     Returns a df if a string name is passed, or a list of df if a list
     of names is passed. Is recursive in the list case"""
 
+    print(f"Getting data for {name}")
+
     if isinstance(name, str):
         return df[df["individual-local-identifier"] == name]
     elif isinstance(name, list):
-        return [get_data_by_name(df, n) for n in name]
-
-
-def add_pixels(df) -> pd.DataFrame:
-    """Uses the return_pixel function to add x and y pixel locations
-    to the data frame"""
-
-    if "x" in df and "y" in df:
-        return
-
-    df["x"] = df.apply(lambda row: return_pixel(row["location-lat"],
-                                                row["location-long"])[0],
-                       axis=1)
-    df["y"] = df.apply(lambda row: return_pixel(row["location-lat"],
-                                                row["location-long"])[1],
-                       axis=1)
-
-
-def interpolate(last_x, last_y, dest_x, dest_y) -> list:
-    """Provides a list of x,y pairs in tuple form that bridge from last_x,
-    lasy_y and include dest_x, dest_y. The path will move one step at a
-    time in the dimension that changes the most, to guarantee continuity
-    """
-
-    dx = dest_x - last_x
-    dy = dest_y - last_y
-
-    if (dy == 0 and dx == 0):
-        return []
-
-    max_val = max(abs(dx), abs(dy))
-
-    x_step = float(dx)/max_val
-    y_step = float(dy)/max_val
-
-    return list(
-            [(round(last_x + x_step * (i + 1)),
-              round(last_y + y_step * (i + 1))) for i in range(max_val)])
-
-
-def get_coords(df) -> list:
-    """Takes a data frame representing the path of a single bird, and
-    generates (x, y) coords that represent this bird's path.
-    Makes use of the interpolate function to fill in gaps"""
-
-    add_pixels(df)
-    last_x = None
-    last_y = None
-
-    for row in df.itertuples(index=False):
-        x = getattr(row, "x")
-        y = getattr(row, "y")
-        if last_x is None or last_y is None:
-            last_x = x
-            last_y = y
-            yield (last_x, last_y)
-            continue
-        # print(f"Interpolating ({last_x}, {last_y})->({x}, {y})")
-        for coord in interpolate(last_x, last_y, x, y):
-            yield coord
-        # print("Finished interpolation")
-        last_x = x
-        last_y = y
+        return [get_data_by_name(df, n) for n in name if (
+            df[df["individual-local-identifier"] == n].shape[0] > 1)]
 
 
 if __name__ == "__main__":
@@ -135,12 +78,14 @@ if __name__ == "__main__":
     print(get_names(df))
     print(get_west_names())
     print(get_data_by_name(df, get_west_names()))
-    my_df = get_data_by_name(df, get_west_names())[0]
-    add_pixels(my_df)
+    my_df = get_data_by_name(df, 'Edgar')
     print(my_df)
+    model.add_pixels(my_df)
+    print(my_df)
+    print(get_data_by_name(df, 'Edgar'))
     last_x = None
     last_y = None
-    for pair in list(get_coords(my_df)):
+    for pair in list(model.get_coords(my_df)):
         x = pair[0]
         y = pair[1]
         if last_x is None or last_y is None:

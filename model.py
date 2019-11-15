@@ -3,10 +3,11 @@
 # File for working with the feature set of the model
 
 import numpy as np
+import pandas as pd
 from functools import reduce
 import operator
 import itertools
-from water import get_if_water_xy
+from return_pixel import return_pixel
 import vultures
 
 
@@ -64,6 +65,8 @@ class feature:
         """Returns the bucket number that a given value should be placed in
         for a given feature, given numbers representing the max and min of
         values for this feature. Returns an int"""
+        if value == -1:
+            return -1
 
         normal = (value - self.min) / (self.max - self.min)
         return round((self.buckets - 1) * normal)
@@ -74,7 +77,12 @@ class feature:
         this matrix at the given x, y, coordinate.
         """
 
-        return self.data[x, y]
+        try:
+            return self.data[y - 1, x - 1]
+        except IndexError:
+            print(f"Shape of data is {self.data.shape}")
+            print(f"You tried to access ({x}, {y})")
+            return -1
 
 
 class model:
@@ -128,7 +136,7 @@ class model:
         for a given feature. Returns an int"""
 
         try:
-            return self.feature_dict[feature].get_bucket(value, max, min)
+            return self.feature_dict[feature].get_bucket(value)
         except IndexError:
             print(f"{feature} is not a known feature of this model")
 
@@ -186,9 +194,12 @@ class model:
         indices = [f.get_bucket(f.function(x, y)) for f in features]
         index_tuple = tuple(indices)
 
+        if -1 in index_tuple:
+            return -1
+
         return self.states[index_tuple]
 
-    def get_trajectory(self, points, features=[]):
+    def get_trajectory(self, points, features=[]) -> list:
         """Returns an Ix2 matrix representing the trajectory of the given
         series of points."""
 
@@ -207,6 +218,8 @@ class model:
                 last_y = y
 
             state = self.get_state(x, y, features)
+            if state == -1:
+                break
             action = get_action(x - last_x, y-last_y)
             # print(f"Point ({x}, {y}) -> State {state}, Action {action}")
             pairs.append((state, action))
@@ -214,7 +227,19 @@ class model:
             last_x = x
             last_y = y
 
-        return np.array(pairs)
+        return pairs
+
+    def get_trajectories(self, list, features=[]) -> list:
+        """Returns a list of trajectories. Splits trajectories
+        into pieces to minimize lost data.
+        """
+
+        trajectories_list = []
+        for df in list:
+            trajectory = self.get_trajectory(get_coords(df), features)
+            trajectories_list.append(trajectory)
+
+        return trajectories_list
 
 
 def get_action(dx, dy):
@@ -235,6 +260,74 @@ def get_action(dx, dy):
     return action_dict[dy][dx]
 
 
+def add_pixels(df) -> pd.DataFrame:
+    """Uses the return_pixel function to add x and y pixel locations
+    to the data frame"""
+
+    if "x" in df and "y" in df:
+        return
+
+    df["x"] = df.apply(lambda row: return_pixel(row["location-lat"],
+                                                row["location-long"])[0],
+                       axis=1)
+    df["y"] = df.apply(lambda row: return_pixel(row["location-lat"],
+                                                row["location-long"])[1],
+                       axis=1)
+
+
+def interpolate(last_x, last_y, dest_x, dest_y) -> list:
+    """Provides a list of x,y pairs in tuple form that bridge from last_x,
+    lasy_y and include dest_x, dest_y. The path will move one step at a
+    time in the dimension that changes the most, to guarantee continuity
+    """
+
+    dx = dest_x - last_x
+    dy = dest_y - last_y
+
+    if (dy == 0 and dx == 0):
+        return []
+
+    max_val = max(abs(dx), abs(dy))
+
+    x_step = float(dx)/max_val
+    y_step = float(dy)/max_val
+
+    return list(
+            [(round(last_x + x_step * (i + 1)),
+              round(last_y + y_step * (i + 1))) for i in range(max_val)])
+
+
+def get_coords(df) -> list:
+    """Takes a data frame representing the path of a single bird, and
+    generates (x, y) coords that represent this bird's path.
+    Makes use of the interpolate function to fill in gaps"""
+
+    try:
+        print(f"Finding coords of {df['individual-local-identifier'].iloc[0]}")
+    except IndexError as e:
+        print(df)
+        raise e
+
+    add_pixels(df)
+    last_x = None
+    last_y = None
+
+    for row in df.itertuples(index=False):
+        x = getattr(row, "x")
+        y = getattr(row, "y")
+        if last_x is None or last_y is None:
+            last_x = x
+            last_y = y
+            yield (last_x, last_y)
+            continue
+        # print(f"Interpolating ({last_x}, {last_y})->({x}, {y})")
+        for coord in interpolate(last_x, last_y, x, y):
+            yield coord
+        # print("Finished interpolation")
+        last_x = x
+        last_y = y
+
+
 if __name__ == "__main__":
     test_hub = model()
     print("***Features***")
@@ -248,6 +341,9 @@ if __name__ == "__main__":
     print("***Reading vulture data***")
     df = vultures.read_file()
     my_df = vultures.get_data_by_name(df, vultures.get_west_names())[0]
-    coords = vultures.get_coords(my_df)
+    coords = get_coords(my_df)
     print("***Trajectory for first vulture on west***")
     print(test_hub.get_trajectory(coords))
+    print("***Trajectories for all vultures on west***")
+    west_birds = vultures.get_data_by_name(df, vultures.get_west_names())
+    print(test_hub.get_trajectories(west_birds))
