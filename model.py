@@ -46,6 +46,7 @@ class Feature:
             self.function = self.get_value
             try:
                 self.data = np.load(self.file, allow_pickle=True)
+                self.data = self.data[:, :self.data[1]//2]
             except IOError:
                 print(f"There was a problem with the numpy file {self.file}")
                 exit(1)
@@ -82,7 +83,7 @@ class Feature:
         """
 
         try:
-            return self.data[y - 1, x - 1]
+            return self.data[y, x]
         except IndexError:
             print(f"Shape of data is {self.data.shape}")
             print(f"You tried to access ({x}, {y})")
@@ -103,6 +104,9 @@ class Model:
         }
 
         self.set_states()
+        shape = Feature("coast", 10).data.shape
+        self.shape = (shape[0], shape[1])
+        self.size = self.shape[0] * self.shape[1]
 
     def set_states(self, features=[]):
         """Set the states list for the model given the features
@@ -170,19 +174,20 @@ class Model:
             features = list(self.feature_dict.keys())
 
         try:
-            f = np.zeros((self.feature_dict[features[0]].data.size,
-                          len(features)), dtype=np.uint8)
+            f = np.zeros((self.size, len(features)), dtype=np.uint8)
             for i in range(len(features)):
                 feature = self.feature_dict[features[i]]
-                for y in range(feature.data.shape[0]):
-                    for x in range(feature.data.shape[1]):
+                for y in range(self.shape[0]):
+                    for x in range(self.shape[1]):
                         value = feature.get_value(x, y)
                         bucket = feature.get_bucket(value)
                         f[y + x * feature.data.shape[0], i] = bucket
 
             return f
-        except IndexError:
+        except IndexError as e:
             print("One of the features provided was unknown")
+            print(f"x was {x} and y was {y}")
+            raise e
 
     def get_state(self, x, y):
         """Returns the state at the given x, y coordinate
@@ -201,12 +206,23 @@ class Model:
         for point in points:
             x = point[0]
             y = point[1]
+
             if last_x is None and last_y is None:
                 last_x = x
                 last_y = y
 
+            if last_x >= self.shape[1] or last_y >= self.shape[0]:
+                return episode
+
             cur_state = self.get_state(last_x, last_y)
+            cur_state = cur_state[0] + cur_state[1] * self.shape[0]
+            try:
+                assert cur_state != 1329550
+            except AssertionError as e:
+                state = self.get_state(last_x, last_y)
+                print(state, self.shape)
             next_state = self.get_state(x, y)
+            next_state = next_state[0] + next_state[1] * self.shape[0]
             action = get_action(x - last_x, y - last_y)
             # print(f"Point ({x}, {y}) -> State {state}, Action {action}")
             episode.append(Step(cur_state=cur_state,
@@ -242,7 +258,7 @@ def get_action(dx, dy):
     change in y"""
 
     try:
-        assert(abs(dx) + abs(dy) < 2)
+        assert abs(dx) + abs(dy) < 2
     except AssertionError:
         print("x and y changed by too much")
         print(f"dx is {dx} and dy is {dy}")

@@ -93,7 +93,7 @@ if __name__ == "__main__":
             last_y = y
             continue
         print(f"({x}, {y}) from ({last_x}, {last_y})")
-        assert(abs(x - last_x) <= 1 and abs(y - last_y) <= 1)
+        assert abs(x - last_x) <= 1 and abs(y - last_y) <= 1
         last_x = x
         last_y = y
 

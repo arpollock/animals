@@ -92,7 +92,7 @@ if __name__ == "__main__":
     height = 1378
     coast_points = top.get_coast_points()
     city_scores = get_city_scores(width, height).astype(int)
-    np.save("population.npy", city_scores)
+    np.save("population.npy", np.transpose(city_scores))
     print(np.max(city_scores), np.min(city_scores))
     heatmap = np.divide(city_scores, np.max(city_scores))
     heatmap = np.multiply(heatmap, 255)
