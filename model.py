@@ -9,9 +9,13 @@ import operator
 import itertools
 from return_pixel import return_pixel
 import vultures
+from collections import namedtuple
+import random
+
+Step = namedtuple('Step', 'cur_state action next_state reward done')
 
 
-class feature:
+class Feature:
     """Class which represents a single feature of the data to be used
     for learning rewards"""
 
@@ -69,7 +73,7 @@ class feature:
             return -1
 
         normal = (value - self.min) / (self.max - self.min)
-        return round((self.buckets - 1) * normal)
+        return int(round((self.buckets - 1) * normal))
 
     def get_value(self, x, y):
         """Default data reading function. Should access an array read from
@@ -85,17 +89,17 @@ class feature:
             return -1
 
 
-class model:
+class Model:
     """Class which defines parameters of model and model features"""
 
     def __init__(self):
         """Initialize class with features and dimensions"""
 
         self.feature_dict = {
-            "water": feature("water", 2, file="ocean_or_land.npy"),
-            # "coast": feature("coast", 10, 5000, 0),
-            "elevation": feature("elevation", 8),
-            # "population": feature("population", 10)
+            "water": Feature("water", 2, file="ocean_or_land.npy"),
+            "coast": Feature("coast", 10),
+            "elevation": Feature("elevation", 8),
+            "population": Feature("population", 10)
         }
 
         self.set_states()
@@ -163,50 +167,34 @@ class model:
         considering those features."""
 
         if len(features) == 0:
-            features = self.feature_dict.keys()
+            features = list(self.feature_dict.keys())
 
         try:
-            range_list = list(
-                [range(
-                    0, self.feature_dict[f].buckets
-                ) for f in features]
-            )
-            combinations = list(itertools.product(*range_list))
+            f = np.zeros((self.feature_dict[features[0]].data.size,
+                          len(features)), dtype=np.uint8)
+            for i in range(len(features)):
+                feature = self.feature_dict[features[i]]
+                for y in range(feature.data.shape[0]):
+                    for x in range(feature.data.shape[1]):
+                        value = feature.get_value(x, y)
+                        bucket = feature.get_bucket(value)
+                        f[y + x * feature.data.shape[0], i] = bucket
 
-            return np.array(combinations)
+            return f
         except IndexError:
             print("One of the features provided was unknown")
 
-    def get_state(self, x, y, features=[]):
-        """Returns the state at the given x, y coordinate, assuming
-        states are determined by all features of the model. If a list
-        of features is passed, only those features are used to generate
-        the state space
+    def get_state(self, x, y):
+        """Returns the state at the given x, y coordinate
         """
 
-        if len(features) == 0:
-            features = self.feature_dict.keys()
+        return (int(y), int(x))
 
-        self.set_states(features)
-
-        features = list(map(lambda name: self.feature_dict[name], features))
-
-        indices = [f.get_bucket(f.function(x, y)) for f in features]
-        index_tuple = tuple(indices)
-
-        if -1 in index_tuple:
-            return -1
-
-        return self.states[index_tuple]
-
-    def get_trajectory(self, points, features=[]) -> list:
-        """Returns an Ix2 matrix representing the trajectory of the given
+    def get_episode(self, points) -> list:
+        """Returns an list representing an episode of the given
         series of points."""
 
-        if len(features) == 0:
-            features = self.feature_dict.keys()
-
-        pairs = []
+        episode = []
 
         last_x = None
         last_y = None
@@ -217,47 +205,61 @@ class model:
                 last_x = x
                 last_y = y
 
-            state = self.get_state(x, y, features)
-            if state == -1:
-                break
-            action = get_action(x - last_x, y-last_y)
+            cur_state = self.get_state(last_x, last_y)
+            next_state = self.get_state(x, y)
+            action = get_action(x - last_x, y - last_y)
             # print(f"Point ({x}, {y}) -> State {state}, Action {action}")
-            pairs.append((state, action))
+            episode.append(Step(cur_state=cur_state,
+                                action=action,
+                                next_state=next_state,
+                                reward=0,
+                                done=False))
 
             last_x = x
             last_y = y
 
-        return pairs
+        episode[-1] = Step(cur_state=episode[-1].cur_state,
+                           action=episode[-1].action,
+                           next_state=episode[-1].next_state,
+                           reward=episode[-1].reward,
+                           done=True)
+        return episode
 
-    def get_trajectories(self, list, features=[]) -> list:
-        """Returns a list of trajectories. Splits trajectories
-        into pieces to minimize lost data.
+    def get_trajectories(self, list) -> list:
+        """Returns a list of episodes.
         """
 
-        trajectories_list = []
+        trajectories = []
         for df in list:
-            trajectory = self.get_trajectory(get_coords(df), features)
-            trajectories_list.append(trajectory)
+            trajectory = self.get_episode(get_coords(df))
+            trajectories.append(trajectory)
 
-        return trajectories_list
+        return trajectories
 
 
 def get_action(dx, dy):
     """Returns the number of the action taken given change in x and
     change in y"""
 
+    try:
+        assert(abs(dx) + abs(dy) < 2)
+    except AssertionError:
+        print("x and y changed by too much")
+        print(f"dx is {dx} and dy is {dy}")
+
     if dx != 0:
         dx = dx / abs(dx)
+        if dx < 0:
+            return 1
+        else:
+            return 0
     if dy != 0:
         dy = dy / abs(dy)
-
-    action_dict = {
-        -1: {-1: 0, 0: 1, 1: 2},
-        0: {-1: 3, 0: 4, 1: 5},
-        1: {-1: 6, 0: 7, 1: 8}
-    }
-
-    return action_dict[dy][dx]
+        if dy < 0:
+            return 3
+        else:
+            return 2
+    return 4
 
 
 def add_pixels(df) -> pd.DataFrame:
@@ -281,20 +283,20 @@ def interpolate(last_x, last_y, dest_x, dest_y) -> list:
     time in the dimension that changes the most, to guarantee continuity
     """
 
-    dx = dest_x - last_x
-    dy = dest_y - last_y
-
-    if (dy == 0 and dx == 0):
-        return []
-
-    max_val = max(abs(dx), abs(dy))
-
-    x_step = float(dx)/max_val
-    y_step = float(dy)/max_val
-
-    return list(
-            [(round(last_x + x_step * (i + 1)),
-              round(last_y + y_step * (i + 1))) for i in range(max_val)])
+    steps = []
+    while (last_x, last_y) != (dest_x, dest_y):
+        dx = dest_x - last_x
+        dy = dest_y - last_y
+        if abs(dx) > abs(dy):
+            last_x += dx / abs(dx) if dx != 0 else 0
+        elif abs(dy) > abs(dx):
+            last_y += dy / abs(dy) if dy != 0 else 0
+        else:
+            binary = random.randint(0, 1)
+            last_x += (dx / abs(dx) if dx != 0 else 0) * binary
+            last_y += (dy / abs(dy) if dy != 0 else 0) * (1 - binary)
+        steps.append((last_x, last_y))
+    return steps
 
 
 def get_coords(df) -> list:
@@ -329,21 +331,19 @@ def get_coords(df) -> list:
 
 
 if __name__ == "__main__":
-    test_hub = model()
+    test_hub = Model()
     print("***Features***")
     print(test_hub.list_features())
     print("***Full Feature Matrix***")
     print(test_hub.get_feature_matrix())
     print("***Feature Matrix with just water***")
     print(test_hub.get_feature_matrix(["water"]))
-    print("***State of 0, 0 using water feature***")
-    print(test_hub.get_state(0, 0, ["water"]))
     print("***Reading vulture data***")
     df = vultures.read_file()
     my_df = vultures.get_data_by_name(df, vultures.get_west_names())[0]
     coords = get_coords(my_df)
     print("***Trajectory for first vulture on west***")
-    print(test_hub.get_trajectory(coords))
+    print(test_hub.get_episode(coords))
     print("***Trajectories for all vultures on west***")
     west_birds = vultures.get_data_by_name(df, vultures.get_west_names())
     print(test_hub.get_trajectories(west_birds))
