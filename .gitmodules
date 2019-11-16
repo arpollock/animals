@@ -1,0 +1,3 @@
+[submodule "irl-imitation"]
+	path = irl-imitation
+	url = https://github.com/yrlu/irl-imitation.git

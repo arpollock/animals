@@ -341,9 +341,6 @@ if __name__ == "__main__":
     print("***Reading vulture data***")
     df = vultures.read_file()
     my_df = vultures.get_data_by_name(df, vultures.get_west_names())[0]
-    coords = get_coords(my_df)
-    print("***Trajectory for first vulture on west***")
-    print(test_hub.get_episode(coords))
     print("***Trajectories for all vultures on west***")
     west_birds = vultures.get_data_by_name(df, vultures.get_west_names())
     print(test_hub.get_trajectories(west_birds))
