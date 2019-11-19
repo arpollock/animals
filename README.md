@@ -42,6 +42,14 @@ Place Turkey Vulture data in the *data* directory, with the filename `turkey_vul
      - Passing in our data to the guy's IRL library
 - Learn/Understand IRL model and bring questions/needed clarifications/etc (link above; All)
 
+**TODO (as of 11/18):**
+- Allow for selection of image area to use
+- Get started on project deliverables
+    - Report
+    - Slides
+- Start on poster for Computing Innovation Fair (if we can do it... checking with Saad)
+- Create the CLI 
+
 ## Features
 
 - Land vs. Water (2 buckets)
