@@ -93,7 +93,7 @@ class Feature:
 class Model:
     """Class which defines parameters of model and model features"""
 
-    def __init__(self):
+    def __init__(self, x_start=0, x_end=None, y_start=0, y_end=None):
         """Initialize class with features and dimensions"""
 
         self.feature_dict = {
@@ -103,26 +103,22 @@ class Model:
             "population": Feature("population", 10)
         }
 
-        self.set_states()
         shape = Feature("coast", 10).data.shape
-        self.shape = (shape[0], shape[1])
+
+        self.x_start = x_start
+        if x_end is None:
+            self.x_end = shape[1] - 1
+        else:
+            self.x_end = x_end
+        self.y_start = y_start
+        if y_end is None:
+            self.y_end = shape[0] - 1
+        else:
+            self.y_end = y_end
+
+        self.shape = (self.x_end + 1 - self.x_start,
+                      self.y_end + 1 - self.y_start)
         self.size = self.shape[0] * self.shape[1]
-
-    def set_states(self, features=[]):
-        """Set the states list for the model given the features
-        """
-
-        if len(features) == 0:
-            features = self.feature_dict.keys()
-
-        self.states = np.zeros(tuple(
-            self.feature_dict[f].buckets for f in features), dtype=np.int32)
-
-        range_list = list(
-            [range(0, self.feature_dict[f].buckets) for f in features])
-        combinations = list(itertools.product(*range_list))
-        for s, combo in enumerate(combinations):
-            self.states[combo] = int(s)
 
     def list_features(self):
         """Returns a list of feature strings"""
@@ -148,21 +144,14 @@ class Model:
         except IndexError:
             print(f"{feature} is not a known feature of this model")
 
-    def get_states(self, features=[]):
+    def get_states(self):
         """Returns the necessary number of states to handle all combinations
         of the known features of the model, if a feature list is provided,
         it will only return the state number required for the features
         specified"""
 
-        if len(features) == 0:
-            features = self.feature_dict.keys()
-
-        try:
-            return reduce(operator.mul,
-                          [self.feature_dict[f] for f in features],
-                          1)
-        except IndexError:
-            print("One of the features passed in is not in this model")
+        return ((self.x_end + 1 - self.x_start)
+                * (self.y_end + 1 - self.y_start))
 
     def get_feature_matrix(self, features=[]):
         """Returns an n by d numpy array where n is the number of states,
@@ -179,7 +168,8 @@ class Model:
                 feature = self.feature_dict[features[i]]
                 for y in range(self.shape[0]):
                     for x in range(self.shape[1]):
-                        value = feature.get_value(x, y)
+                        value = feature.get_value(x + self.x_start,
+                                                  y + self.y_start)
                         bucket = feature.get_bucket(value)
                         f[y + x * feature.data.shape[0], i] = bucket
 
@@ -211,16 +201,16 @@ class Model:
                 last_x = x
                 last_y = y
 
-            if last_x >= self.shape[1] or last_y >= self.shape[0]:
+            if last_x < self.x_start or last_y < self.y_start:
+                last_x = x
+                last_y = y
+                continue
+
+            if last_x > self.x_end or last_y > self.y_end:
                 return episode
 
             cur_state = self.get_state(last_x, last_y)
             cur_state = cur_state[0] + cur_state[1] * self.shape[0]
-            try:
-                assert cur_state != 1329550
-            except AssertionError as e:
-                state = self.get_state(last_x, last_y)
-                print(state, self.shape)
             next_state = self.get_state(x, y)
             next_state = next_state[0] + next_state[1] * self.shape[0]
             action = get_action(x - last_x, y - last_y)
