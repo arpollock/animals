@@ -78,14 +78,18 @@ if __name__ == "__main__":
     print(get_names(df))
     print(get_west_names())
     print(get_data_by_name(df, get_west_names()))
-    my_df = get_data_by_name(df, 'Edgar')
+    my_df = get_data_by_name(df, 'Julie')
     print(my_df)
     model.add_pixels(my_df)
     print(my_df)
     print(get_data_by_name(df, 'Edgar'))
     last_x = None
     last_y = None
+    counter = 0
     for pair in list(model.get_coords(my_df)):
+        if counter > 5:
+            input("")
+        counter += 1
         x = pair[0]
         y = pair[1]
         if last_x is None or last_y is None:

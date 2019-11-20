@@ -46,7 +46,6 @@ class Feature:
             self.function = self.get_value
             try:
                 self.data = np.load(self.file, allow_pickle=True)
-                self.data = self.data[:, :self.data[1]//2]
             except IOError:
                 print(f"There was a problem with the numpy file {self.file}")
                 exit(1)
@@ -116,8 +115,8 @@ class Model:
         else:
             self.y_end = y_end
 
-        self.shape = (self.x_end + 1 - self.x_start,
-                      self.y_end + 1 - self.y_start)
+        self.shape = (self.y_end + 1 - self.y_start,
+                      self.x_end + 1 - self.x_start)
         self.size = self.shape[0] * self.shape[1]
 
     def list_features(self):
@@ -171,7 +170,7 @@ class Model:
                         value = feature.get_value(x + self.x_start,
                                                   y + self.y_start)
                         bucket = feature.get_bucket(value)
-                        f[y + x * feature.data.shape[0], i] = bucket
+                        f[y + x * self.shape[0], i] = bucket
 
             return f
         except IndexError as e:
@@ -183,7 +182,7 @@ class Model:
         """Returns the state at the given x, y coordinate
         """
 
-        return (int(y), int(x))
+        return (int(y - self.y_start), int(x - self.x_start))
 
     def get_episode(self, points) -> list:
         """Returns an list representing an episode of the given
@@ -238,7 +237,8 @@ class Model:
         trajectories = []
         for df in list:
             trajectory = self.get_episode(get_coords(df))
-            trajectories.append(trajectory)
+            if len(trajectory) > 0:
+                trajectories.append(trajectory)
 
         return trajectories
 
