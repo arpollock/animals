@@ -46,7 +46,7 @@ class Feature:
             self.function = self.get_value
             try:
                 self.data = np.load(self.file, allow_pickle=True)
-                self.data = self.data[:, :self.data[1]//2]
+                self.data = self.data[:, :self.data.shape[1]//2]
             except IOError:
                 print(f"There was a problem with the numpy file {self.file}")
                 exit(1)
