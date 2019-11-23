@@ -5,7 +5,7 @@ from irl3.mdp import gridworld
 from irl3 import maxent_irl
 
 # Create the vultures model
-model = model.Model()
+model = model.Model(275, 325, 475, 525)
 # Read the vulture data
 df = vultures.read_file()
 # Narrow down birds to those deemed acceeptable
