@@ -42,12 +42,18 @@ Place Turkey Vulture data in the *data* directory, with the filename `turkey_vul
 - Learn/Understand IRL model and bring questions/needed clarifications/etc (link above; All)
 
 **TODO (as of 11/18):**
-- Allow for selection of image area to use (Seth/Zach)
+- <s> Allow for selection of image area to use (Seth/Zach) </s>
 - Get started on project deliverables
     - Slides (Alex)
 - Start on poster for Computing Innovation Fair (if we can do it... checking with Saad) (Seth, Leah)
 - Create the CLI (Zach)
-- See if different hyperparameters can help speed up the model (Leah)
+- <s> See if different hyperparameters can help speed up the model (Leah) </s>
+
+**TODO (as of 11/23):**
+- Create and Finish CLI
+- Finish Slides
+- Get reward for 50x50 map
+- Test out larger on iMac
 
 ## Features
 
