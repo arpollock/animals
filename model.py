@@ -98,7 +98,7 @@ class Model:
         self.feature_dict = {
             "water": Feature("water", 2, file="ocean_or_land.npy"),
             "coast": Feature("coast", 10),
-            "elevation": Feature("elevation", 8),
+            # "elevation": Feature("elevation", 8),
             "population": Feature("population", 10)
         }
 
@@ -223,11 +223,12 @@ class Model:
             last_x = x
             last_y = y
 
-        episode[-1] = Step(cur_state=episode[-1].cur_state,
-                           action=episode[-1].action,
-                           next_state=episode[-1].next_state,
-                           reward=episode[-1].reward,
-                           done=True)
+        if (len(episode) > 0):
+            episode[-1] = Step(cur_state=episode[-1].cur_state,
+                               action=episode[-1].action,
+                               next_state=episode[-1].next_state,
+                               reward=episode[-1].reward,
+                               done=True)
         return episode
 
     def get_trajectories(self, list) -> list:
