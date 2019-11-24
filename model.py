@@ -98,7 +98,7 @@ class Model:
         self.feature_dict = {
             "water": Feature("water", 2, file="ocean_or_land.npy"),
             "coast": Feature("coast", 10),
-            # "elevation": Feature("elevation", 8),
+            "elevation": Feature("elevation", 8),
             "population": Feature("population", 10)
         }
 
