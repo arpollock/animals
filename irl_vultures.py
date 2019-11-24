@@ -9,6 +9,8 @@ import time
 
 # Create the vultures model
 model = mod.Model(954, 979, 1157, 1172)
+# 50x50 one
+# model = mod.Model(930, 979, 1128, 1172)
 
 try:
     with open('bird_coords.dat', 'r') as file:
