@@ -54,6 +54,7 @@ Place Turkey Vulture data in the *data* directory, with the filename `turkey_vul
 - Finish Slides
 - Get reward for 50x50 map
 - Test out larger on iMac
+- Create Reinforcement learning part
 
 ## Features
 
