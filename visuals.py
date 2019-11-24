@@ -17,6 +17,7 @@ cv2.imwrite('visuals/ocean_or_land_heatmap.png', cv2.applyColorMap(water_heatmap
 elevation = np.load('elevation.npy', allow_pickle=True)
 elevation_heatmap = np.divide(elevation, np.max(elevation))
 elevation_heatmap = np.multiply(elevation_heatmap, 255).astype(np.uint8)
+
 cv2.imwrite('visuals/elevation.png', elevation_heatmap)
 cv2.imwrite('visuals/elevation_heatmap.png', cv2.applyColorMap(elevation_heatmap, cv2.COLORMAP_JET))
 

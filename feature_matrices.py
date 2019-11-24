@@ -103,12 +103,13 @@ def get_elevation(x, y) -> float:
 
 def closet_color_elv(b=0, g=0, r=0) -> float:
     closest_color = -1
-    closest_color_dif = 300  # bigger than 0-255 range so will get replaced
+    closest_color_dif = 10000  # bigger than 0-255 range so will get replaced
     if b < 5 and g < 5 and r < 5:  # black -> ocean
         return 0
     for i in range(0, color_scale_height):  # print debug make sure works
         (b_c, g_c, r_c) = color_elv_image_hsv[i, 0]
-        color_diff = (abs(r - r_c)**2 + abs(g - g_c)**2 + abs(b - b_c)**2)**0.5
+        # color_diff = (abs(r - r_c)**2 + abs(b - b_c)**2)**0.5
+        color_diff = abs(b - b_c)
         if color_diff < closest_color_dif:
             closest_color_dif = color_diff
             closest_color = i
@@ -145,6 +146,9 @@ if __name__ == "__main__":
                     print(y)
                 for x in range(w):
                     out_arr[y,x] = get_elevation(x, y)
+        elif option == 2:
+            for i in range(0, color_scale_height):
+                print(color_elv_image_hsv[i, 0])
         elif option == -2:
             file_name = input("What is the file name/path? ")
             read_arr = np.load(file_name)
