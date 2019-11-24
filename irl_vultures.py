@@ -7,7 +7,7 @@ from irl3 import img_utils
 import matplotlib.pyplot as plt
 import time
 
-size = 25
+size = 50
 size = size - 1
 end_x = 979
 end_y = 1172
@@ -58,4 +58,4 @@ rewards_maxent = maxent_irl.maxent_irl(feature_matrix, P_a, 0.8,
 end = time.time()
 print(end - start)
 
-np.save(f"rewards_{size-1}.npy", rewards_maxent)
+np.save(f"rewards_{size+1}.npy", rewards_maxent)
