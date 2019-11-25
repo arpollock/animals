@@ -9,8 +9,10 @@ import time
 
 size = 50
 size = size - 1
-end_x = 979
-end_y = 1172
+# end_x = 979
+# end_y = 1172
+end_x = 1185
+end_y = 1300
 
 # Create the vultures model
 model = mod.Model(end_x - size, end_x, end_y - size, end_y)
