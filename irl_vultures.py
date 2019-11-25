@@ -9,10 +9,17 @@ import time
 
 size = 50
 size = size - 1
+# reward_1_50 location:
 # end_x = 979
 # end_y = 1172
-end_x = 1185
-end_y = 1300
+
+# reward_2_50 location:
+# end_x = 1185
+# end_y = 1300
+
+# reward_3_50 location:
+end_x = 567
+end_y = 762
 
 # Create the vultures model
 model = mod.Model(end_x - size, end_x, end_y - size, end_y)
