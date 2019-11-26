@@ -9,8 +9,10 @@ from shapely.geometry import Point
 from shapely.geometry.polygon import Polygon
 
 top_image = None
+top_image_hsv = None
 ocean_image = None
 color_elv_image = None
+color_elv_image_hsv = None
 h = 0
 w = 0
 scale_thousand_km = 0
@@ -96,14 +98,17 @@ def read_image():
     # images are represented as a multi-dimensional NumPy array with
     # shape no. rows (height) x no. columns (width) x no. channels (depth)
     global top_image
+    global top_image_hsv
     global ocean_image
     global h
     global w
     global scale_thousand_km
     global color_elv_image
     global color_scale_height
+    global color_elv_image_hsv
 
     top_image = cv2.imread(cd + '/data/top_map_black_ocean.png')
+    top_image_hsv = cv2.cvtColor(top_image, cv2.COLOR_BGR2HSV)
     ocean_image = cv2.imread(cd + '/data/land_water.png')
     (h, w, d) = top_image.shape
     print("width={}, height={}, depth={}".format(w, h, d))
@@ -118,6 +123,7 @@ def read_image():
     print("1000 km is {} px".format(scale_thousand_km))
 
     color_elv_image = cv2.imread(cd + '/data/top_color_elv_1px.png')
+    color_elv_image_hsv = cv2.cvtColor(color_elv_image, cv2.COLOR_BGR2HSV)
     (color_scale_height, dummy1, dummy2) = color_elv_image.shape
     print("the height of the color scale image is {} px".format(
         color_scale_height))
@@ -171,7 +177,7 @@ def get_elevation(x, y) -> float:
     # OpenCV color images in the RGB (Red, Green, Blue) color space
     # have a 3-tuple associated with each pixel: (B, G, R) not RGB!!
     if in_bounds(x, y):
-        (top_b, top_g, top_r) = top_image[y, x]
+        (top_b, top_g, top_r) = top_image_hsv[y, x]
         # print(f'({top_b}, {top_g}, {top_r})')
         return closet_color_elv(top_b, top_g, top_r)
     print(f'Invalid pixel value(s)')
@@ -179,13 +185,13 @@ def get_elevation(x, y) -> float:
 
 def closet_color_elv(b=0, g=0, r=0) -> float:
     closest_color = -1
-    closest_color_dif = 300  # bigger than 0-255 range so will get replaced
+    closest_color_dif = 10000  # bigger than 0-255 range so will get replaced
     if b < 5 and g < 5 and r < 5:  # black -> ocean
         return 0
     for i in range(0, color_scale_height):  # print debug make sure works
-        (b_c, g_c, r_c) = color_elv_image[i, 0]
-        color_diff = (abs(r - r_c)**2 + abs(g - g_c)
-                      ** 2 + abs(b - b_c)**2)**(1 / 2)
+        (b_c, g_c, r_c) = color_elv_image_hsv[i, 0]
+        # color_diff = (abs(r - r_c)**2 + abs(b - b_c)**2)**0.5
+        color_diff = abs(b - b_c)
         if color_diff < closest_color_dif:
             closest_color_dif = color_diff
             closest_color = i
@@ -220,8 +226,13 @@ if __name__ == "__main__":
         elif option == 1:
             out_file = "elevation.npy"
             for y in range(h):
+                if y % 50 == 0:
+                    print(y)
                 for x in range(w):
                     out_arr[y,x] = get_elevation(x, y)
+        elif option == 2:
+            for i in range(0, color_scale_height):
+                print(color_elv_image_hsv[i, 0])
         elif option == -2:
             file_name = input("What is the file name/path? ")
             read_arr = np.load(file_name)
@@ -238,4 +249,3 @@ if __name__ == "__main__":
             continue
         if not option == -2 and not option == 2:
             np.save(out_file, out_arr)
-        

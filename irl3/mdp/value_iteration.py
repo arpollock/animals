@@ -14,17 +14,17 @@ import numpy as np
 def value_iteration(P_a, rewards, gamma, error=0.01, deterministic=True):
   """
   static value iteration function. Perhaps the most useful function in this repo
-  
+
   inputs:
-    P_a         NxNxN_ACTIONS transition probabilities matrix - 
-                              P_a[s0, s1, a] is the transition prob of 
-                              landing at state s1 when taking action 
+    P_a         NxNxN_ACTIONS transition probabilities matrix -
+                              P_a[s0, s1, a] is the transition prob of
+                              landing at state s1 when taking action
                               a at state s0
     rewards     Nx1 matrix - rewards for all the states
     gamma       float - RL discount
     error       float - threshold for a stop
     deterministic   bool - to return deterministic policy or stochastic policy
-  
+
   returns:
     values    Nx1 matrix - estimated values
     policy    Nx1 (NxN_ACTIONS if non-det) matrix - policy
@@ -34,8 +34,12 @@ def value_iteration(P_a, rewards, gamma, error=0.01, deterministic=True):
   values = np.zeros([N_STATES])
 
   # estimate values
+  counter = 0
   while True:
     values_tmp = values.copy()
+
+    print(f"Counter is {counter} in infinite loop")
+    counter += 1
 
     for s in range(N_STATES):
       v_s = []
@@ -45,12 +49,16 @@ def value_iteration(P_a, rewards, gamma, error=0.01, deterministic=True):
       break
 
 
+  counter1 = 0
   if deterministic:
     # generate deterministic policy
+    print(f"Counter is {counter1} in deterministic")
+    counter += 1
+
     policy = np.zeros([N_STATES])
     for s in range(N_STATES):
-      policy[s] = np.argmax([sum([P_a[s, s1, a]*(rewards[s]+gamma*values[s1]) 
-                                  for s1 in range(N_STATES)]) 
+      policy[s] = np.argmax([sum([P_a[s, s1, a]*(rewards[s]+gamma*values[s1])
+                                  for s1 in range(N_STATES)])
                                   for a in range(N_ACTIONS)])
 
     return values, policy
@@ -70,9 +78,9 @@ class ValueIterationAgent(object):
   def __init__(self, mdp, gamma, iterations=100):
     """
     The constructor builds a value model from mdp using dynamic programming
-    
+
     inputs:
-      mdp       markov decision process that is required by value iteration agent definition: 
+      mdp       markov decision process that is required by value iteration agent definition:
                 https://github.com/stormmax/reinforcement_learning/blob/master/envs/mdp.py
       gamma     discount factor
     """
@@ -196,10 +204,3 @@ class ValueIterationAgent(object):
                        self.values[P_s1sa[s1_id][0]]) for s1_id in range(len(P_s1sa))]))
     a_id = v_s.index(max(v_s))
     return actions[a_id]
-
-
-
-
-
-
-

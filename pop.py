@@ -97,6 +97,7 @@ if __name__ == "__main__":
     heatmap = np.divide(city_scores, np.max(city_scores))
     heatmap = np.multiply(heatmap, 255)
     heatmap = np.transpose(heatmap).astype(np.uint8)
+
     main_window = cv2.namedWindow('heatmap', cv2.WINDOW_NORMAL)
     for coast in coast_points:
         heatmap[coast[1]][coast[0]] = 255

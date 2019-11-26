@@ -238,17 +238,18 @@ def in_bounds(y, x):
 
 if __name__ == "__main__":
     read_image()
-    coast_heatmap = np.zeros((h, w), dtype=np.uint16)
+    coast = np.zeros((h, w), dtype=np.uint16)
     for x in range(w):
         print(x)
         new = True
         for y in range(h):
-            coast_heatmap[y][x] = dist_from_coast(x, y, new)
+            coast[y][x] = dist_from_coast(x, y, new)
             new = False
-    cv2.imshow('Distance From Coast Heatmap', np.divide(coast_heatmap, np.max(coast_heatmap) / 255).astype(np.uint8))
+    coast_heatmap = np.divide(coast, np.max(coast) / 255).astype(np.uint8)
+    cv2.imshow('Distance From Coast Heatmap', coast_heatmap)
     while cv2.waitKey(33) != 27:
         pass
-    np.save("coast.npy", coast_heatmap)
+    np.save("coast.npy", coast)
     latitude = None
     longitude = None
     while latitude != "exit":

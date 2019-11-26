@@ -50,7 +50,7 @@ def compute_state_visition_freq(P_a, gamma, trajs, policy, deterministic=True):
 
 
 
-def maxent_irl(feat_map, P_a, gamma, trajs, lr, n_iters):
+def maxent_irl(feat_map, P_a, gamma, trajs, lr, n_iters, error=0.01):
   """
   Maximum Entropy Inverse Reinforcement Learning (Maxent IRL)
 
@@ -89,7 +89,8 @@ def maxent_irl(feat_map, P_a, gamma, trajs, lr, n_iters):
     rewards = np.dot(feat_map, theta)
 
     print("# compute policy")
-    _, policy = value_iteration.value_iteration(P_a, rewards, gamma, error=0.01, deterministic=False)
+    _, policy = value_iteration.value_iteration(P_a, rewards, gamma,
+                                                error=error, deterministic=False)
 
     print("# compute state visition frequences")
     svf = compute_state_visition_freq(P_a, gamma, trajs, policy, deterministic=False)

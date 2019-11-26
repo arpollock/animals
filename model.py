@@ -46,7 +46,6 @@ class Feature:
             self.function = self.get_value
             try:
                 self.data = np.load(self.file, allow_pickle=True)
-                self.data = self.data[:, :self.data[1]//2]
             except IOError:
                 print(f"There was a problem with the numpy file {self.file}")
                 exit(1)
@@ -93,7 +92,7 @@ class Feature:
 class Model:
     """Class which defines parameters of model and model features"""
 
-    def __init__(self):
+    def __init__(self, x_start=0, x_end=None, y_start=0, y_end=None):
         """Initialize class with features and dimensions"""
 
         self.feature_dict = {
@@ -103,26 +102,22 @@ class Model:
             "population": Feature("population", 10)
         }
 
-        self.set_states()
         shape = Feature("coast", 10).data.shape
-        self.shape = (shape[0], shape[1])
+
+        self.x_start = x_start
+        if x_end is None:
+            self.x_end = shape[1] - 1
+        else:
+            self.x_end = x_end
+        self.y_start = y_start
+        if y_end is None:
+            self.y_end = shape[0] - 1
+        else:
+            self.y_end = y_end
+
+        self.shape = (self.y_end + 1 - self.y_start,
+                      self.x_end + 1 - self.x_start)
         self.size = self.shape[0] * self.shape[1]
-
-    def set_states(self, features=[]):
-        """Set the states list for the model given the features
-        """
-
-        if len(features) == 0:
-            features = self.feature_dict.keys()
-
-        self.states = np.zeros(tuple(
-            self.feature_dict[f].buckets for f in features), dtype=np.int32)
-
-        range_list = list(
-            [range(0, self.feature_dict[f].buckets) for f in features])
-        combinations = list(itertools.product(*range_list))
-        for s, combo in enumerate(combinations):
-            self.states[combo] = int(s)
 
     def list_features(self):
         """Returns a list of feature strings"""
@@ -148,21 +143,14 @@ class Model:
         except IndexError:
             print(f"{feature} is not a known feature of this model")
 
-    def get_states(self, features=[]):
+    def get_states(self):
         """Returns the necessary number of states to handle all combinations
         of the known features of the model, if a feature list is provided,
         it will only return the state number required for the features
         specified"""
 
-        if len(features) == 0:
-            features = self.feature_dict.keys()
-
-        try:
-            return reduce(operator.mul,
-                          [self.feature_dict[f] for f in features],
-                          1)
-        except IndexError:
-            print("One of the features passed in is not in this model")
+        return ((self.x_end + 1 - self.x_start)
+                * (self.y_end + 1 - self.y_start))
 
     def get_feature_matrix(self, features=[]):
         """Returns an n by d numpy array where n is the number of states,
@@ -179,9 +167,10 @@ class Model:
                 feature = self.feature_dict[features[i]]
                 for y in range(self.shape[0]):
                     for x in range(self.shape[1]):
-                        value = feature.get_value(x, y)
+                        value = feature.get_value(x + self.x_start,
+                                                  y + self.y_start)
                         bucket = feature.get_bucket(value)
-                        f[y + x * feature.data.shape[0], i] = bucket
+                        f[y + x * self.shape[0], i] = bucket
 
             return f
         except IndexError as e:
@@ -193,7 +182,7 @@ class Model:
         """Returns the state at the given x, y coordinate
         """
 
-        return (int(y), int(x))
+        return (int(y - self.y_start), int(x - self.x_start))
 
     def get_episode(self, points) -> list:
         """Returns an list representing an episode of the given
@@ -211,16 +200,16 @@ class Model:
                 last_x = x
                 last_y = y
 
-            if last_x >= self.shape[1] or last_y >= self.shape[0]:
+            if last_x < self.x_start or last_y < self.y_start:
+                last_x = x
+                last_y = y
+                continue
+
+            if last_x > self.x_end or last_y > self.y_end:
                 return episode
 
             cur_state = self.get_state(last_x, last_y)
             cur_state = cur_state[0] + cur_state[1] * self.shape[0]
-            try:
-                assert cur_state != 1329550
-            except AssertionError as e:
-                state = self.get_state(last_x, last_y)
-                print(state, self.shape)
             next_state = self.get_state(x, y)
             next_state = next_state[0] + next_state[1] * self.shape[0]
             action = get_action(x - last_x, y - last_y)
@@ -234,23 +223,48 @@ class Model:
             last_x = x
             last_y = y
 
-        episode[-1] = Step(cur_state=episode[-1].cur_state,
-                           action=episode[-1].action,
-                           next_state=episode[-1].next_state,
-                           reward=episode[-1].reward,
-                           done=True)
+        if (len(episode) > 0):
+            episode[-1] = Step(cur_state=episode[-1].cur_state,
+                               action=episode[-1].action,
+                               next_state=episode[-1].next_state,
+                               reward=episode[-1].reward,
+                               done=True)
         return episode
 
     def get_trajectories(self, list) -> list:
-        """Returns a list of episodes.
+        """Returns a list of episodes. Takes in a list of dataframes or a
+        list pf lists of tuples generated by coords
         """
 
         trajectories = []
-        for df in list:
-            trajectory = self.get_episode(get_coords(df))
-            trajectories.append(trajectory)
+
+        for item in list:
+            if isinstance(item, pd.DataFrame):
+                trajectory = self.get_episode(get_coords(item))
+            else:
+                trajectory = self.get_episode(item)
+            if len(trajectory) > 0:
+                trajectories.append(trajectory)
 
         return trajectories
+
+    def pos2idx(self, pos):
+        """
+        input:
+          column-major 2d position
+        returns:
+          1d index
+        """
+        return int(pos[0] + pos[1] * self.shape[0])
+
+    def idx2pos(self, idx):
+        """
+        input:
+          1d idx
+        returns:
+          2d column-major position
+        """
+        return (int(idx % self.shape[0]), int(idx / self.shape[0]))
 
 
 def get_action(dx, dy):
