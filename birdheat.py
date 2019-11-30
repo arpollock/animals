@@ -16,7 +16,9 @@ except IOError:
     # Read the vulture data
     df = vultures.read_file()
     # Narrow down birds to those deemed acceeptable
-    west_birds = vultures.get_data_by_name(df, vultures.get_west_names())
+    # west_birds = vultures.get_data_by_name(df, vultures.get_west_names())
+    west_birds = vultures.get_data_by_name(df,
+                                           list(vultures.get_names(df)))
     file = open('bird_coords.dat', 'w')
     coords_list = list([list(mod.get_coords(bird)) for bird in west_birds])
     file.write(str(coords_list))

@@ -93,7 +93,7 @@ class Model:
     """Class which defines parameters of model and model features"""
 
     def __init__(self, x_start=0, x_end=None, y_start=0, y_end=None,
-				 shape=None):
+                 shape=None):
         """Initialize class with features and dimensions"""
 
         self.feature_dict = {
@@ -103,10 +103,10 @@ class Model:
             "population": Feature("population", 10)
         }
 
-		if shape is None:
-        	shape = self.feature_dict.values[0].data.shape
-		else:
-			self.shape = shape
+        if shape is None:
+            shape = list(self.feature_dict.values())[0].data.shape
+        else:
+            self.shape = shape
 
         self.x_start = x_start
         if x_end is None:
