@@ -27,6 +27,11 @@ def draw_boxes(heatmap):
     heatmap = cv2.rectangle(heatmap, start_2, end_2, color_2, thickness)
     return heatmap
 
+bird_heatmap = cv2.imread('bird_heat.png')
+bird_heatmap = draw_boxes(bird_heatmap)
+cv2.imwrite('visuals_box/bird_heatmap.png', bird_heatmap)
+
+
 
 city_scores = np.load('population.npy', allow_pickle=True)
 city_scores_heatmap = np.divide(city_scores, np.max(city_scores))
