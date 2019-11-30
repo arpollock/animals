@@ -7,7 +7,8 @@ import model as mod
 import json
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-d", "--data", action="append", nargs=2,
+parser.add_argument(
+    "-d", "--data", action="append", nargs=2,
     help="Specify a data filename followed by #buckets")
 parser.add_argument("-c", "--config", help="Specify a configuration file")
 args = parser.parse_args()
@@ -28,18 +29,18 @@ def read_config(filename="traxent.cfg"):
         raise IOError(f"File {filename} was not found or could not be read")
 
     model_config = config["model"]
-    model = mod.Model(*model_config.values())
+    new_model = mod.Model(*model_config.values())
 
     for feature in config["features"].keys():
         details = config[feature]
         obj = mod.Feature(*details.values())
-        model.feature_dict[feature] = obj
+        new_model.feature_dict[feature] = obj
 
     hyperparams = config["hyperparams"]
     if hyperparams is None:
         hyperparams = {}
 
-    return model, hyperparams
+    return new_model, hyperparams
 
 
 def write_config(model, hyperparams={}, filename="traxent.cfg"):
