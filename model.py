@@ -35,7 +35,8 @@ class Feature:
         """
 
         self.name = name
-        self.buckets = buckets
+        self.buckets = int(buckets)
+        self.custom_func = custom_func
 
         if file is None:
             self.file = f"{self.name}.npy"
@@ -97,14 +98,17 @@ class Model:
         """Initialize class with features and dimensions"""
 
         self.feature_dict = {
-            "water": Feature("water", 2, file="ocean_or_land.npy"),
-            "coast": Feature("coast", 10),
-            "elevation": Feature("elevation", 8),
-            "population": Feature("population", 10)
+            # "water": Feature("water", 2, file="ocean_or_land.npy"),
+            # "coast": Feature("coast", 10),
+            # "elevation": Feature("elevation", 8),
+            # "population": Feature("population", 10)
         }
 
         if shape is None:
-            shape = list(self.feature_dict.values())[0].data.shape
+            try:
+                shape = list(self.feature_dict.values())[0].data.shape
+            except IndexError:
+                shape = (1, 1)
         else:
             self.shape = shape
 

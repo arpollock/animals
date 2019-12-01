@@ -1,15 +1,20 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from irl3 import img_utils
 
-filename = input("Enter filename: ")
 
-rewards_maxent = np.load(filename, allow_pickle=True)
-print(rewards_maxent.shape)
-size = int((filename.split('_')[-1]).split('.')[0])
-plt.figure(figsize=(size, size))
-plt.subplot(1, 1, 1)
-img_utils.heatmap2d(np.reshape(rewards_maxent,
-                               (size, size),
-                               order='F'), 'Reward Map - Maxent', block=False)
-plt.show()
+def draw_plot(filename):
+    """Draws a reward map specified in filename
+    """
+
+    rewards_maxent = np.load(filename, allow_pickle=True)
+    print(rewards_maxent.shape)
+    size = (filename.split('_')[1]).split('x')
+    size = (int(size[0]), int(size[1]))
+    plt.imshow(np.reshape(rewards_maxent, size, order='F'), cmap='viridis')
+    plt.colorbar()
+    plt.show()
+
+
+if __name__ == "__main__":
+    filename = input("Enter filename: ")
+    draw_plot(filename)
