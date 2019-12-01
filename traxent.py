@@ -1,16 +1,17 @@
 # Implementation of command line interface for animal tracking 2
 
 import numpy as np
+import os
 import argparse
 import json
 import time
 import datetime
+import glob
 from irl3.mdp import gridworld
 from irl3 import maxent_irl
 import model as mod
 import move_data
 from draw_plot import draw_plot
-import glob, os
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -185,6 +186,7 @@ options = {1:   'Load Features',
            7:   'Save and Exit'}
 
 while True:
+    os.system("clear")
     print('Please choose an option below to start')
 
     for i, option in zip(options.keys(), options.values()):
