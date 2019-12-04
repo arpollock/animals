@@ -161,7 +161,9 @@ def irl_rewards(model, filename, hyperparams, deep=False):
     now = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     timestamp = now
 
-    save_file = f"rewards_{first_dim}x{last_dim}_{timestamp}"
+    deep_section = "_deep_" if deep else ""
+
+    save_file = f"rewards_{first_dim}x{last_dim}{deep_section}_{timestamp}"
 
     np.save(save_file, rewards_maxent)
     return (save_file + ".npy")

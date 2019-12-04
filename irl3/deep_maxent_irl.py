@@ -1,10 +1,9 @@
 import numpy as np
 import tensorflow as tf
-import mdp.gridworld as gridworld
-import mdp.value_iteration as value_iteration
-import img_utils
-import tf_utils
-from utils import *
+from .mdp import gridworld
+from .mdp import value_iteration
+from . import tf_utils
+from .utils import *
 
 
 
@@ -21,7 +20,7 @@ class DeepIRLFC:
     self.sess = tf.Session()
     self.input_s, self.reward, self.theta = self._build_network(self.name)
     self.optimizer = tf.train.GradientDescentOptimizer(lr)
-    
+
     self.grad_r = tf.placeholder(tf.float32, [None, 1])
     self.l2_loss = tf.add_n([tf.nn.l2_loss(v) for v in self.theta])
     self.grad_l2 = tf.gradients(self.l2_loss, self.theta)
@@ -60,14 +59,14 @@ class DeepIRLFC:
   def apply_grads(self, feat_map, grad_r):
     grad_r = np.reshape(grad_r, [-1, 1])
     feat_map = np.reshape(feat_map, [-1, self.n_input])
-    _, grad_theta, l2_loss, grad_norms = self.sess.run([self.optimize, self.grad_theta, self.l2_loss, self.grad_norms], 
+    _, grad_theta, l2_loss, grad_norms = self.sess.run([self.optimize, self.grad_theta, self.l2_loss, self.grad_norms],
       feed_dict={self.grad_r: grad_r, self.input_s: feat_map})
     return grad_theta, l2_loss, grad_norms
 
 
 
 def compute_state_visition_freq(P_a, gamma, trajs, policy, deterministic=True):
-  """compute the expected states visition frequency p(s| theta, T) 
+  """compute the expected states visition frequency p(s| theta, T)
   using dynamic programming
 
   inputs:
@@ -76,7 +75,7 @@ def compute_state_visition_freq(P_a, gamma, trajs, policy, deterministic=True):
     trajs   list of list of Steps - collected from expert
     policy  Nx1 vector (or NxN_ACTIONS if deterministic=False) - policy
 
-  
+
   returns:
     p       Nx1 vector - state visitation frequencies
   """
@@ -84,7 +83,7 @@ def compute_state_visition_freq(P_a, gamma, trajs, policy, deterministic=True):
 
   T = len(trajs[0])
   # mu[s, t] is the prob of visiting state s at time t
-  mu = np.zeros([N_STATES, T]) 
+  mu = np.zeros([N_STATES, T])
 
   for traj in trajs:
     mu[traj[0].cur_state, 0] += 1
@@ -103,11 +102,11 @@ def compute_state_visition_freq(P_a, gamma, trajs, policy, deterministic=True):
 def demo_svf(trajs, n_states):
   """
   compute state visitation frequences from demonstrations
-  
+
   input:
     trajs   list of list of Steps - collected from expert
   returns:
-    p       Nx1 vector - state visitation frequences   
+    p       Nx1 vector - state visitation frequences
   """
 
   p = np.zeros(n_states)
@@ -123,8 +122,8 @@ def deep_maxent_irl(feat_map, P_a, gamma, trajs, lr, n_iters):
 
   inputs:
     feat_map    NxD matrix - the features for each state
-    P_a         NxNxN_ACTIONS matrix - P_a[s0, s1, a] is the transition prob of 
-                                       landing at state s1 when taking action 
+    P_a         NxNxN_ACTIONS matrix - P_a[s0, s1, a] is the transition prob of
+                                       landing at state s1 when taking action
                                        a at state s0
     gamma       float - RL discount factor
     trajs       a list of demonstrations
@@ -136,7 +135,7 @@ def deep_maxent_irl(feat_map, P_a, gamma, trajs, lr, n_iters):
   """
 
   # tf.set_random_seed(1)
-  
+
   N_STATES, _, N_ACTIONS = np.shape(P_a)
 
   # init nn model
@@ -145,32 +144,27 @@ def deep_maxent_irl(feat_map, P_a, gamma, trajs, lr, n_iters):
   # find state visitation frequencies using demonstrations
   mu_D = demo_svf(trajs, N_STATES)
 
-  # training 
+  # training
   for iteration in range(n_iters):
     if iteration % (n_iters/10) == 0:
       print('iteration: {}'.format(iteration))
-    
+
     # compute the reward matrix
     rewards = nn_r.get_rewards(feat_map)
-    
-    # compute policy 
+
+    # compute policy
     _, policy = value_iteration.value_iteration(P_a, rewards, gamma, error=0.01, deterministic=True)
-    
+
     # compute expected svf
     mu_exp = compute_state_visition_freq(P_a, gamma, trajs, policy, deterministic=True)
-    
+
     # compute gradients on rewards:
     grad_r = mu_D - mu_exp
 
     # apply gradients to the neural network
     grad_theta, l2_loss, grad_norm = nn_r.apply_grads(feat_map, grad_r)
-    
+
 
   rewards = nn_r.get_rewards(feat_map)
   # return sigmoid(normalize(rewards))
   return normalize(rewards)
-
-
-
-
-
