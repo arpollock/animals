@@ -309,7 +309,8 @@ while True:
                 for y in range(model.shape[0]):
                     comb = tuple(
                         [feature.get_bucket(
-                            feature.get_value(x, y)
+                            feature.get_value(x + model.x_start,
+                                              y + model.y_start)
                         ) for feature in model.feature_dict.values()])
                     print(comb)
                     if comb in comb_dict.keys():
