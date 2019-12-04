@@ -8,7 +8,7 @@ import time
 import datetime
 import glob
 from irl3.mdp import gridworld
-from irl3 import maxent_irl
+from irl3 import maxent_irl, deep_maxent_irl
 import model as mod
 import move_data
 from draw_plot import draw_plot
@@ -109,7 +109,7 @@ def write_config(model, data_file, hyperparams={}, filename="traxent.cfg"):
     file.close()
 
 
-def irl_rewards(model, filename, hyperparams):
+def irl_rewards(model, filename, hyperparams, deep=False):
     """Do everything irl_vultures does
     """
 
@@ -138,15 +138,21 @@ def irl_rewards(model, filename, hyperparams):
     # Get Transition Probabilities
     P_a = gw.get_transition_mat()
     # Create matrix for rewards
-    print("Running MaxEnt IRL")
     start = time.time()
     learning_rate = hyperparams["learning rate"]
     gamma = hyperparams["discount factor"]
     iterations = hyperparams["iterations"]
-    rewards_maxent = maxent_irl.maxent_irl(feature_matrix, P_a, gamma,
-                                           trajectories, learning_rate,
-                                           iterations,
-                                           error=0.1)
+    if not deep:
+        print("Running MaxEnt IRL")
+        rewards_maxent = maxent_irl.maxent_irl(feature_matrix, P_a, gamma,
+                                               trajectories, learning_rate,
+                                               iterations)
+    else:
+        print("Running Deep MaxEnt IRL")
+        rewards_maxent = deep_maxent_irl.deep_maxent_irl(feature_matrix, P_a,
+                                                         gamma, trajectories,
+                                                         learning_rate,
+                                                         iterations)
     end = time.time()
     print("Time Elapsed: ", end - start)
 
@@ -196,7 +202,7 @@ while True:
     while option not in options.keys():
         try:
             option = int(input("> "))
-        except TypeError as e:
+        except TypeError:
             print("Option was not an int")
             continue
 
@@ -214,7 +220,7 @@ while True:
         while feature_option not in feature_opts.keys():
             try:
                 feature_option = int(input("> "))
-            except TypeError as e:
+            except TypeError:
                 print("Option was not an int")
                 continue
 
@@ -247,15 +253,35 @@ while True:
             while not isinstance(bins, int):
                 try:
                     bins = int(input("Enter number of bins: "))
-                except TypeError as e:
+                except TypeError:
                     print("Option was not an int")
                     continue
             model.feature_dict[to_change].buckets = bins
 
     elif option == 2:
         # generate the reward map
-        rewards_file = irl_rewards(model, data_file, hyperparams)
-        print(f"Rewards file generated at {rewards_file}")
+        reward_opts = {1: "MaxEnt IRL",
+                       2: "Deep MaxEnt IRL"}
+
+        for i, reward_option in zip(reward_opts.keys(),
+                                    reward_opts.values()):
+            print(f"{i}: {reward_option}")
+
+        reward_option = None
+        while reward_option not in reward_opts.keys():
+            try:
+                reward_option = int(input("> "))
+            except TypeError:
+                print("Option was not an int")
+                continue
+
+        if reward_option == 1:
+            rewards_file = irl_rewards(model, data_file, hyperparams)
+            print(f"Rewards file generated at {rewards_file}")
+        elif reward_option == 2:
+            rewards_file = irl_rewards(model, data_file, hyperparams,
+                                       deep=True)
+            print(f"Rewards file generated at {rewards_file}")
     elif option == 3:
         # display the reward map
         plot_file = rewards_file
@@ -268,7 +294,7 @@ while True:
         while reward_option not in reward_options.keys():
             try:
                 reward_option = int(input("> "))
-            except TypeError as e:
+            except TypeError:
                 print("Option was not an int")
                 continue
 
@@ -290,7 +316,7 @@ while True:
             while reward_map_index not in possible_rewards.keys():
                 try:
                     reward_map_index = int(input("Reward Map: "))
-                except TypeError as e:
+                except TypeError:
                     print("Option was not an int")
                     continue
             plot_file = possible_rewards[reward_map_index]
@@ -308,7 +334,7 @@ while True:
                 new_value = int(input("What is the new desired value: "))
             else:
                 new_value = float(input("What is the new desired value: "))
-        except TypeError as e:
+        except TypeError:
             print("Option was not the correct type")
             continue
         hyperparams[to_change] = new_value
@@ -328,22 +354,22 @@ while True:
         while True:
             try:
                 x_start = int(input("New x_start: "))
-            except TypeError as e:
+            except TypeError:
                 print("Option was not an int")
                 continue
             try:
                 x_end = int(input("New x_end: "))
-            except TypeError as e:
+            except TypeError:
                 print("Option was not an int")
                 continue
             try:
                 y_start = int(input("New y_start: "))
-            except TypeError as e:
+            except TypeError:
                 print("Option was not an int")
                 continue
             try:
                 y_end = int(input("New y_end: "))
-            except TypeError as e:
+            except TypeError:
                 print("Option was not an int")
                 continue
             if x_start < x_end < x_bound and y_start < y_end < y_bound:
@@ -365,7 +391,7 @@ while True:
         while data_option not in data_opts.keys():
             try:
                 data_option = int(input("> "))
-            except TypeError as e:
+            except TypeError:
                 print("Option was not an int")
                 continue
 
