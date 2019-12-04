@@ -37,7 +37,6 @@ def compute_state_visition_freq(P_a, gamma, trajs, policy, deterministic=True):
 
   for traj in trajs:
     mu[traj[0].cur_state, 0] += 1
-    print("Going through trajectory", traj)
   mu[:,0] = mu[:,0]/len(trajs)
 
   for s in range(N_STATES):

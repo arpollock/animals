@@ -304,9 +304,12 @@ while True:
         while to_change not in hyperparams.keys():
             to_change = input("Enter name of hyperparameter to change: ")
         try:
-            new_value = int(input("What is the new desired value: "))
+            if to_change == "iterations":
+                new_value = int(input("What is the new desired value: "))
+            else:
+                new_value = float(input("What is the new desired value: "))
         except TypeError as e:
-            print("Option was not an int")
+            print("Option was not the correct type")
             continue
         hyperparams[to_change] = new_value
     elif option == 5:

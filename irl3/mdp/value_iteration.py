@@ -38,7 +38,7 @@ def value_iteration(P_a, rewards, gamma, error=0.01, deterministic=True):
   while True:
     values_tmp = values.copy()
 
-    print(f"Counter is {counter} in infinite loop")
+    # print(f"Counter is {counter} in infinite loop")
     counter += 1
 
     for s in range(N_STATES):
