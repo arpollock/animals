@@ -288,7 +288,8 @@ while True:
         # display the reward map
         plot_file = rewards_file
         reward_options = {1: "Display reward map from current session",
-                          2: "Display previous reward map"}
+                          2: "Display previous reward map",
+                          3: "Feature Heatmap"}
         for reward_option, reward_option_index in zip(reward_options.values(),
                                                       reward_options.keys()):
             print(f'{reward_option_index}: {reward_option}')
@@ -299,6 +300,34 @@ while True:
             except TypeError:
                 print("Option was not an int")
                 continue
+
+        if reward_option == 3:
+            shape = model.shape
+            map = np.zeros(model.shape, dtype=np.float32)
+            comb_dict = {}
+            for x in range(model.shape[1]):
+                for y in range(model.shape[0]):
+                    comb = tuple(
+                        [feature.get_bucket(
+                            feature.get_value(x, y)
+                        ) for feature in model.feature_dict.values()])
+                    print(comb)
+                    if comb in comb_dict.keys():
+                        comb_val = comb_dict[comb]
+                    else:
+                        if len(comb_dict.values()) > 0:
+                            comb_val = max(comb_dict.values()) + 1
+                        else:
+                            comb_val = 1
+                        comb_dict[comb] = comb_val
+                    map[y, x] = comb_dict[comb]
+
+            normal = np.divide(map, np.max(map))
+            filename = f"Feature_{model.shape[1]}x{model.shape[0]}_colors"
+            np.save(filename, normal)
+            draw_plot(filename + ".npy")
+
+            continue
 
         if plot_file is None or reward_option == 2:
             if plot_file is None and reward_option != 2:
